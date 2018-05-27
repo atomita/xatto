@@ -1,11 +1,20 @@
+import { CHILDREN } from './consts';
 import { ElementExtends } from './ElementExtends'
+import { getAttributes } from './getAttributes'
 import { patch } from './patch'
 import { recycleElement } from './recycleElement'
+import { resolveNode } from './resolveNode'
+import { x } from './x'
 
-export function atto(node, element: Element & ElementExtends): () => void {
+export function atto(
+  view: (attributes: any, children: any[]) => any,
+  element: Element & ElementExtends
+): () => void {
 
   let oldNode = recycleElement(element)
   let scheduled = false
+
+  const attributes = getAttributes(element)
 
   function eventListener(event: Event) {
     const element = event.currentTarget as Element & ElementExtends
@@ -28,6 +37,8 @@ export function atto(node, element: Element & ElementExtends): () => void {
 
   function render() {
     const lifecycle: Array<() => any> = []
+
+    const node = resolveNode(x(view, attributes, oldNode[CHILDREN]), x('div', {}, []))
 
     element = patch(
       element.parentNode as Element,
