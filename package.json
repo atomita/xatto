@@ -1,0 +1,44 @@
+{
+  "name": "xatto",
+  "version": "0.0.0",
+  "description": "JavaScript framework for building web applications like Hyperapp.",
+  "main": "dist/xatto.min.js",
+  "repository": "git@github.com:atomita/xatto.git",
+  "author": "atomita",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"\"",
+    "build": "npm run bundle:clean && npm run minify",
+    "bundle": "rollup --config",
+    "bundle:clean": "rm -rf ./dist && npm run bundle",
+    "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=dist/xatto.min.js.map",
+    "prepare": "npm run build",
+    "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "subTaskConcurrency": 1,
+    "linters": {
+      "src/**/*.ts": [
+        "prettier --write",
+        "tslint --fix",
+        "git add"
+      ]
+    }
+  },
+  "devDependencies": {
+    "hasky": "^3.0.2",
+    "lint-staged": "^7.0.0",
+    "prettier": "^1.11.1",
+    "rollup": "^0.57.1",
+    "rollup-plugin-typescript2": "^0.12.0",
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.1",
+    "uglify-js": "^3.3.16"
+  },
+  "dependencies": {}
+}
