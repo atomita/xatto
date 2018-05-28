@@ -17,3 +17,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+----
+
+## Code not derived from [jorgebucaran/ultradom](https://github.com/jorgebucaran/ultradom) or [hyperapp/hyperapp](https://github.com/hyperapp/hyperapp).
+
+Copyright © 2018-present [atomita](https://github.com/atomita)
