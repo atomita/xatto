@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN } from './consts'
+import { ATTRIBUTES, CHILDREN, XA_CONTEXT, XA_EXTRA } from './consts'
 
 export function removeChildren(element, node) {
   const attributes = node[ATTRIBUTES]
@@ -8,7 +8,7 @@ export function removeChildren(element, node) {
     }
 
     if (attributes.ondestroy) {
-      attributes.ondestroy(element)
+      attributes.ondestroy(element, attributes, attributes[XA_CONTEXT], attributes[XA_EXTRA])
     }
   }
   return element

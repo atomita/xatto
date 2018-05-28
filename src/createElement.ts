@@ -20,7 +20,7 @@ export function createElement(
     const callback = attributes.oncreate
     if (callback) {
       lifecycle.push(function() {
-        callback(element)
+        callback(element, {}, attributes[XA_CONTEXT], attributes[XA_EXTRA])
       })
     }
 

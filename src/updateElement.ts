@@ -38,7 +38,7 @@ export function updateElement(
   const callback = attributes[XA_RECYCLE] ? attributes.oncreate : attributes.onupdate
   if (callback) {
     lifecycle.push(function() {
-      callback(element, oldAttributes)
+      callback(element, oldAttributes, attributes[XA_CONTEXT], attributes[XA_EXTRA])
     })
   }
 }
