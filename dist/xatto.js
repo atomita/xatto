@@ -42,16 +42,16 @@
   };
 
   function resolveNode(node, parentNode) {
-      if ('string' === typeof node) {
-          return node;
+      var attributes = node && node[ATTRIBUTES];
+      if (attributes) {
+          var context = attributes[CONTEXT]
+              || (parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][CONTEXT])
+              || {};
+          var extra = __assign({}, (attributes[EXTRA] || {}), (parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][EXTRA] || {}));
+          attributes[CONTEXT] = context;
+          attributes[EXTRA] = extra;
       }
-      var context = node[ATTRIBUTES][CONTEXT]
-          || parentNode[ATTRIBUTES][CONTEXT]
-          || {};
-      var extra = __assign({}, (node[ATTRIBUTES][EXTRA] || {}), (parentNode[ATTRIBUTES][EXTRA] || {}));
-      node[ATTRIBUTES][CONTEXT] = context;
-      node[ATTRIBUTES][EXTRA] = extra;
-      return typeof node.name === "function"
+      return (node && typeof node.name === "function")
           ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
           : node != null
               ? node
