@@ -6,9 +6,6 @@
 
   var ATTRIBUTES = 'attributes';
   var CHILDREN = 'children';
-  var XA_CONTEXT = 'xa-context';
-  var XA_EXTRA = 'xa-extra';
-  var XA_RECYCLE = 'xa-recycle';
 
   function getAttributes(element) {
       return element.getAttributeNames().reduce(function (acc, k) {
@@ -16,6 +13,10 @@
           return acc;
       }, {});
   }
+
+  var CONTEXT = 'xa-context';
+  var EXTRA = 'xa-extra';
+  var RECYCLE = 'xa-recycle';
 
   /*! *****************************************************************************
   Copyright (c) Microsoft Corporation. All rights reserved.
@@ -44,12 +45,12 @@
       if ('string' === typeof node) {
           return node;
       }
-      var context = node[ATTRIBUTES][XA_CONTEXT]
-          || parentNode[ATTRIBUTES][XA_CONTEXT]
+      var context = node[ATTRIBUTES][CONTEXT]
+          || parentNode[ATTRIBUTES][CONTEXT]
           || {};
-      var extra = __assign({}, (node[ATTRIBUTES][XA_EXTRA] || {}), (parentNode[ATTRIBUTES][XA_EXTRA] || {}));
-      node[ATTRIBUTES][XA_CONTEXT] = context;
-      node[ATTRIBUTES][XA_EXTRA] = extra;
+      var extra = __assign({}, (node[ATTRIBUTES][EXTRA] || {}), (parentNode[ATTRIBUTES][EXTRA] || {}));
+      node[ATTRIBUTES][CONTEXT] = context;
+      node[ATTRIBUTES][EXTRA] = extra;
       return typeof node.name === "function"
           ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
           : node != null
@@ -99,7 +100,7 @@
           var callback_1 = attributes.oncreate;
           if (callback_1) {
               lifecycle.push(function () {
-                  callback_1(element);
+                  callback_1(element, {}, attributes[CONTEXT], attributes[EXTRA]);
               });
           }
           for (var i = 0; i < node[CHILDREN].length; i++) {
@@ -108,8 +109,8 @@
           for (var name_1 in attributes) {
               updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
           }
-          element.context = attributes[XA_CONTEXT];
-          element.extra = attributes[XA_EXTRA];
+          element.context = attributes[CONTEXT];
+          element.extra = attributes[EXTRA];
       }
       return element;
   }
@@ -125,7 +126,7 @@
               removeChildren(element.childNodes[i], node[CHILDREN][i]);
           }
           if (attributes.ondestroy) {
-              attributes.ondestroy(element);
+              attributes.ondestroy(element, attributes, attributes[CONTEXT], attributes[EXTRA]);
           }
       }
       return element;
@@ -135,9 +136,10 @@
       function done() {
           parent.removeChild(removeChildren(element, node));
       }
-      var cb = node[ATTRIBUTES] && node[ATTRIBUTES].onremove;
+      var attributes = node[ATTRIBUTES] || {};
+      var cb = attributes.onremove;
       if (cb) {
-          cb(element, done);
+          cb(element, done, attributes, attributes[CONTEXT], attributes[EXTRA]);
       }
       else {
           done();
@@ -154,12 +156,12 @@
               updateAttribute(element, name_1, attributes[name_1], oldAttributes[name_1], isSVG, eventListener);
           }
       }
-      element.context = attributes[XA_CONTEXT];
-      element.extra = attributes[XA_EXTRA];
-      var callback = attributes[XA_RECYCLE] ? attributes.oncreate : attributes.onupdate;
+      element.context = attributes[CONTEXT];
+      element.extra = attributes[EXTRA];
+      var callback = attributes[RECYCLE] ? attributes.oncreate : attributes.onupdate;
       if (callback) {
           lifecycle.push(function () {
-              callback(element, oldAttributes);
+              callback(element, oldAttributes, attributes[CONTEXT], attributes[EXTRA]);
           });
       }
   }
@@ -210,7 +212,7 @@
                   i++;
                   continue;
               }
-              var recycle = (children[k][ATTRIBUTES] || {})[XA_RECYCLE];
+              var recycle = (children[k][ATTRIBUTES] || {})[RECYCLE];
               if (newKey == null || true === recycle) {
                   if (oldKey == null) {
                       patch(element, oldElements[i], oldChildren[i], children[k], lifecycle, isSVG, eventListener);
@@ -252,7 +254,7 @@
   var map = [].map;
   function recycleElement(element) {
       var attributes = getAttributes(element);
-      attributes[XA_RECYCLE] = true;
+      attributes[RECYCLE] = true;
       return {
           nodeName: element.nodeName.toLowerCase(),
           attributes: attributes,
