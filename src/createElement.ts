@@ -1,4 +1,5 @@
-import { ATTRIBUTES, CHILDREN, XA_CONTEXT, XA_EXTRA } from './consts'
+import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { CONTEXT, EXTRA } from './consts/attributeNames'
 import { resolveNode } from './resolveNode'
 import { updateAttribute } from './updateAttribute'
 
@@ -20,7 +21,7 @@ export function createElement(
     const callback = attributes.oncreate
     if (callback) {
       lifecycle.push(function() {
-        callback(element, {}, attributes[XA_CONTEXT], attributes[XA_EXTRA])
+        callback(element, {}, attributes[CONTEXT], attributes[EXTRA])
       })
     }
 
@@ -37,8 +38,8 @@ export function createElement(
       updateAttribute(element, name, attributes[name], null, isSVG, eventListener)
     }
 
-    element.context = attributes[XA_CONTEXT]
-    element.extra = attributes[XA_EXTRA]
+    element.context = attributes[CONTEXT]
+    element.extra = attributes[EXTRA]
   }
 
   return element

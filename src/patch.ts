@@ -1,5 +1,6 @@
 import { ElementExtends } from './ElementExtends'
-import { ATTRIBUTES, CHILDREN, XA_RECYCLE } from './consts'
+import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { RECYCLE } from './consts/attributeNames'
 import { createElement } from './createElement'
 import { getKey } from './getKey'
 import { removeElement } from './removeElement'
@@ -73,7 +74,7 @@ export function patch(
         continue
       }
 
-      const recycle = (children[k][ATTRIBUTES] || {})[XA_RECYCLE]
+      const recycle = (children[k][ATTRIBUTES] || {})[RECYCLE]
 
       if (newKey == null || true === recycle) {
         if (oldKey == null) {

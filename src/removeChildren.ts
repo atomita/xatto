@@ -1,4 +1,5 @@
-import { ATTRIBUTES, CHILDREN, XA_CONTEXT, XA_EXTRA } from './consts'
+import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { CONTEXT, EXTRA } from './consts/attributeNames'
 
 export function removeChildren(element, node) {
   const attributes = node[ATTRIBUTES]
@@ -8,7 +9,7 @@ export function removeChildren(element, node) {
     }
 
     if (attributes.ondestroy) {
-      attributes.ondestroy(element, attributes, attributes[XA_CONTEXT], attributes[XA_EXTRA])
+      attributes.ondestroy(element, attributes, attributes[CONTEXT], attributes[EXTRA])
     }
   }
   return element

@@ -1,11 +1,11 @@
-import { XA_RECYCLE } from './consts'
+import { RECYCLE } from './consts/attributeNames'
 import { getAttributes } from './getAttributes'
 
 const map = [].map
 
 export function recycleElement(element) {
   const attributes = getAttributes(element)
-  attributes[XA_RECYCLE] = true
+  attributes[RECYCLE] = true
   return {
     nodeName: element.nodeName.toLowerCase(),
     attributes,

@@ -1,4 +1,4 @@
-import { CHILDREN } from './consts';
+import { CHILDREN } from './consts/vdomAttributeNames';
 import { ElementExtends } from './ElementExtends'
 import { getAttributes } from './getAttributes'
 import { patch } from './patch'

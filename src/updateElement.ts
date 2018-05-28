@@ -1,5 +1,5 @@
+import { CONTEXT, EXTRA, RECYCLE } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
-import { XA_CONTEXT, XA_EXTRA, XA_RECYCLE } from './consts'
 import { updateAttribute } from './updateAttribute'
 
 export function updateElement(
@@ -32,13 +32,13 @@ export function updateElement(
     }
   }
 
-  element.context = attributes[XA_CONTEXT]
-  element.extra = attributes[XA_EXTRA]
+  element.context = attributes[CONTEXT]
+  element.extra = attributes[EXTRA]
 
-  const callback = attributes[XA_RECYCLE] ? attributes.oncreate : attributes.onupdate
+  const callback = attributes[RECYCLE] ? attributes.oncreate : attributes.onupdate
   if (callback) {
     lifecycle.push(function() {
-      callback(element, oldAttributes, attributes[XA_CONTEXT], attributes[XA_EXTRA])
+      callback(element, oldAttributes, attributes[CONTEXT], attributes[EXTRA])
     })
   }
 }

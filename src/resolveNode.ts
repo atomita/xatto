@@ -1,20 +1,21 @@
-import { ATTRIBUTES, CHILDREN, XA_CONTEXT, XA_EXTRA } from './consts'
+import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { CONTEXT, EXTRA } from './consts/attributeNames'
 
 export function resolveNode(node, parentNode) {
   if ('string' === typeof node) {
     return node
   }
 
-  const context = node[ATTRIBUTES][XA_CONTEXT]
-    || parentNode[ATTRIBUTES][XA_CONTEXT]
+  const context = node[ATTRIBUTES][CONTEXT]
+    || parentNode[ATTRIBUTES][CONTEXT]
     || {}
   const extra = {
-    ...(node[ATTRIBUTES][XA_EXTRA] || {}),
-    ...(parentNode[ATTRIBUTES][XA_EXTRA] || {})
+    ...(node[ATTRIBUTES][EXTRA] || {}),
+    ...(parentNode[ATTRIBUTES][EXTRA] || {})
   }
 
-  node[ATTRIBUTES][XA_CONTEXT] = context
-  node[ATTRIBUTES][XA_EXTRA] = extra
+  node[ATTRIBUTES][CONTEXT] = context
+  node[ATTRIBUTES][EXTRA] = extra
 
   return typeof node.name === "function"
     ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)

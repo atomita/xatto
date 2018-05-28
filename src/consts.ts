@@ -1,5 +1,0 @@
-export const ATTRIBUTES = 'attributes'
-export const CHILDREN = 'children'
-export const XA_CONTEXT = 'xa-context'
-export const XA_EXTRA = 'xa-extra'
-export const XA_RECYCLE = 'xa-recycle'
