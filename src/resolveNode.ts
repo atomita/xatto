@@ -2,22 +2,22 @@ import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
 import { CONTEXT, EXTRA } from './consts/attributeNames'
 
 export function resolveNode(node, parentNode) {
-  if ('string' === typeof node) {
-    return node
+  const attributes = node && node[ATTRIBUTES]
+
+  if (attributes) {
+    const context = attributes[CONTEXT]
+      || (parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][CONTEXT])
+      || {}
+    const extra = {
+      ...(attributes[EXTRA] || {}),
+      ...(parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][EXTRA] || {})
+    }
+
+    attributes[CONTEXT] = context
+    attributes[EXTRA] = extra
   }
 
-  const context = node[ATTRIBUTES][CONTEXT]
-    || parentNode[ATTRIBUTES][CONTEXT]
-    || {}
-  const extra = {
-    ...(node[ATTRIBUTES][EXTRA] || {}),
-    ...(parentNode[ATTRIBUTES][EXTRA] || {})
-  }
-
-  node[ATTRIBUTES][CONTEXT] = context
-  node[ATTRIBUTES][EXTRA] = extra
-
-  return typeof node.name === "function"
+  return (node && typeof node.name === "function")
     ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
     : node != null
       ? node
