@@ -1,3 +1,3 @@
-export const CONTEXT = 'xaContext'
-export const EXTRA = 'xaExtra'
-export const RECYCLE = 'xaRecycle'
+export const CONTEXT = 'xa-context'
+export const EXTRA = 'xa-extra'
+export const RECYCLE = 'xa-recycle'

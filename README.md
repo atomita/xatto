@@ -35,7 +35,7 @@ import { x, atto } from "xatto"
 const down = (context, value) => ({ count: ~~context.count - value })
 const up = (context, value) => ({ count: ~~context.count + value })
 
-const view = ({ xaContext, ...attrs }, children) => (
+const view = ({ 'xa-context': xaContext, ...attrs }, children) => (
   <div>
     <h1>{~~xaContext.count}</h1>
     <button onclick={(event, context) => down(context, 1)}>-</button>
