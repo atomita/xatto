@@ -7,9 +7,9 @@
     var ATTRIBUTES = 'attributes';
     var CHILDREN = 'children';
 
-    var CONTEXT = 'xaContext';
-    var EXTRA = 'xaExtra';
-    var RECYCLE = 'xaRecycle';
+    var CONTEXT = 'xa-context';
+    var EXTRA = 'xa-extra';
+    var RECYCLE = 'xa-recycle';
 
     /*! *****************************************************************************
     Copyright (c) Microsoft Corporation. All rights reserved.
