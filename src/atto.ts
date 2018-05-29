@@ -1,20 +1,19 @@
-import { CHILDREN } from './consts/vdomAttributeNames';
+import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames';
+import { RECYCLE } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
-import { getAttributes } from './getAttributes'
 import { patch } from './patch'
-import { recycleElement } from './recycleElement'
 import { resolveNode } from './resolveNode'
 import { x } from './x'
 
 export function atto(
   view: (attributes: any, children: any[]) => any,
-  element: Element & ElementExtends
+  element: Element & ElementExtends,
+  oldNode: any = null
 ): () => void {
 
-  let oldNode = recycleElement(element)
   let scheduled = false
 
-  const attributes = getAttributes(element)
+  const attributes = oldNode && oldNode[ATTRIBUTES] || {}
 
   function eventListener(event: Event) {
     const element = event.currentTarget as Element & ElementExtends
@@ -38,7 +37,7 @@ export function atto(
   function render() {
     const lifecycle: Array<() => any> = []
 
-    const node = resolveNode(x(view, attributes, oldNode[CHILDREN]), x('div', {}, []))
+    const node = resolveNode(x(view, attributes, oldNode && oldNode[CHILDREN]), x('div', {}, []))
 
     element = patch(
       element.parentNode as Element,
@@ -49,6 +48,8 @@ export function atto(
       'svg' === node.name,
       eventListener
     )
+
+    attributes[RECYCLE] = false
 
     while (lifecycle.length) lifecycle.pop()!()
   }
