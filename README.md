@@ -32,14 +32,14 @@ It is also available on a [CDN](https://unpkg.com).
 // @jsx x
 import { x, atto } from "xatto"
 
-const down = (context, value) => ({ count: ~~context.count - value })
-const up = (context, value) => ({ count: ~~context.count + value })
+const down = (event, context) => ({ count: ~~context.count - 1 })
+const up = (event, context) => ({ count: ~~context.count + 1 })
 
-const view = ({ 'xa-context': xaContext, ...attrs }, children) => (
+const view = ({ 'xa-context': context, ...attrs }, children) => (
   <div>
-    <h1>{~~xaContext.count}</h1>
-    <button onclick={(event, context) => down(context, 1)}>-</button>
-    <button onclick={(event, context) => up(context, 1)}>+</button>
+    <h1>{~~context.count}</h1>
+    <button onclick={down}>-</button>
+    <button onclick={up}>+</button>
   </div>
 )
 
