@@ -1,6 +1,8 @@
 import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames';
-import { RECYCLE } from './consts/attributeNames'
+import { CONTEXT, RECYCLE } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
+import { deepGet } from './deepGet'
+import { deepSet } from './deepSet'
 import { patch } from './patch'
 import { resolveNode } from './resolveNode'
 import { x } from './x'
@@ -9,29 +11,44 @@ export function atto(
   view: (attributes: any, children: any[]) => any,
   element: Element & ElementExtends,
   oldNode: any = null
-): () => void {
+) {
 
   let scheduled = false
 
   const attributes = oldNode && oldNode[ATTRIBUTES] || {}
 
-  function eventListener(event: Event) {
-    const element = event.currentTarget as Element & ElementExtends
+  const rootContext: any = attributes[CONTEXT] = {}
 
-    mutate(element.events[event.type](event, element.context || {}, element.extra || {}))
+  function mutate(context: any, actualContext = rootContext, path: string | null = null) {
+    if (context && context !== actualContext) {
+      if (context instanceof Promise) {
+        context.then(newContext => mutate(newContext, actualContext, path))
+      } else if ('object' === typeof context) {
+        if (null == path && 'string' === typeof actualContext) {
+          path = actualContext
+          actualContext = rootContext
+        }
+        const targetContext = path ? (deepGet(actualContext, path) || {}) : actualContext
 
-    function mutate(context) {
-      if (context && context !== element.context) {
-        if (context instanceof Promise) {
-          context.then(mutate)
-        } else if ('function' === typeof context.subscribe) {
-          context.subscribe(mutate) // @todo unsubscribe
-        } else if ('object' === typeof context) {
-          Object.entries(context).map(([k, v]) => element.context[k] = v)
-          scheduleRender()
+        Object.entries(context).map(([k, v]) => targetContext[k] = v)
+
+        if (path) {
+          deepSet(actualContext, path, targetContext)
         }
       }
     }
+    scheduleRender()
+  }
+
+  function eventListener(event: Event) {
+    const element = event.currentTarget as Element & ElementExtends
+
+    element.context = element.context || {}
+    element.extra = element.extra || {}
+
+    const context = element.events[event.type](event, element.context, element.extra)
+
+    mutate(context, element.context)
   }
 
   function render() {
@@ -70,6 +87,6 @@ export function atto(
     }
   }
 
-  return scheduleRender
+  return mutate
 }
 
