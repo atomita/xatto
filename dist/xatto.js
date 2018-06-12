@@ -6,11 +6,14 @@
 
   var ATTRIBUTES = 'attributes';
   var CHILDREN = 'children';
+  var KEY = 'key';
+  var NAME = 'name';
 
   var CONTEXT = 'xa-context';
   var EXTRA = 'xa-extra';
   var RECYCLE = 'xa-recycle';
   var SLICE = 'xa-slice';
+  var TEXT = 'xa-text';
 
   /**
    * Get an item from an object using separator notation.
@@ -66,6 +69,8 @@
           key = nexts;
       }
   }
+
+  var TEXT_NODE = 'xa-txt';
 
   /*! *****************************************************************************
   Copyright (c) Microsoft Corporation. All rights reserved.
@@ -154,11 +159,12 @@
   }
 
   function createElement(node, lifecycle, isSVG, eventListener) {
-      var element = typeof node === "string" || typeof node === "number"
-          ? document.createTextNode(node)
-          : (isSVG = isSVG || node.name === "svg")
-              ? document.createElementNS("http://www.w3.org/2000/svg", node.name)
-              : document.createElement(node.name);
+      var isTextNode = node[NAME] === TEXT_NODE;
+      var element = isTextNode
+          ? document.createTextNode(node[ATTRIBUTES][TEXT])
+          : (isSVG = isSVG || node[NAME] === "svg")
+              ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
+              : document.createElement(node[NAME]);
       var attributes = node[ATTRIBUTES];
       if (attributes) {
           var callback_1 = attributes.oncreate;
@@ -167,11 +173,16 @@
                   callback_1(element, {}, attributes[CONTEXT], attributes[EXTRA]);
               });
           }
-          for (var i = 0; i < node[CHILDREN].length; i++) {
-              element.appendChild(createElement((node[CHILDREN][i] = resolveNode(node[CHILDREN][i], node)), lifecycle, isSVG, eventListener));
+          if (isTextNode) {
+              element.nodeValue = node[ATTRIBUTES][TEXT];
           }
-          for (var name_1 in attributes) {
-              updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
+          else {
+              for (var i = 0; i < node[CHILDREN].length; i++) {
+                  element.appendChild(createElement((node[CHILDREN][i] = resolveNode(node[CHILDREN][i], node)), lifecycle, isSVG, eventListener));
+              }
+              for (var name_1 in attributes) {
+                  updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
+              }
           }
           element.context = attributes[CONTEXT];
           element.extra = attributes[EXTRA];
@@ -243,8 +254,8 @@
           }
           element = newElement;
       }
-      else if (oldNode.name == null) {
-          element.nodeValue = node;
+      else if (oldNode.name === TEXT_NODE) {
+          element.nodeValue = node[ATTRIBUTES][TEXT];
       }
       else {
           updateElement(element, oldNode[ATTRIBUTES], node[ATTRIBUTES], lifecycle, (isSVG = isSVG || node.name === "svg"), eventListener);
@@ -315,6 +326,30 @@
       return element;
   }
 
+  function createVDOM(mayBeTextNode, name, attributes, children) {
+      if (attributes === void 0) { attributes = {}; }
+      if (children === void 0) { children = []; }
+      var node = {};
+      node[NAME] = name;
+      node[ATTRIBUTES] = attributes;
+      node[CHILDREN] = children;
+      node[KEY] = attributes.key;
+      if (mayBeTextNode && 'function' !== typeof name) {
+          node[NAME] = TEXT_NODE;
+          node[ATTRIBUTES][TEXT] = name;
+      }
+      return node;
+  }
+
+  function isVDOM(value) {
+      return 'object' === typeof value
+          && ATTRIBUTES in value
+          && CHILDREN in value
+          && KEY in value
+          && NAME in value
+          && 4 === Object.keys(value).length;
+  }
+
   function x(name, attributes) {
       var rest = [];
       for (var _i = 2; _i < arguments.length; _i++) {
@@ -327,15 +362,10 @@
               rest = rest.concat(node);
           }
           else if (node != null && node !== true && node !== false) {
-              children.unshift(node);
+              children.unshift(isVDOM(node) && node || createVDOM(true, node));
           }
       }
-      return {
-          name: name,
-          attributes: attributes || {},
-          children: children,
-          key: attributes && attributes.key
-      };
+      return createVDOM(false, name, attributes || {}, children);
   }
 
   function atto(view, element, oldNode) {
