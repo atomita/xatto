@@ -1,6 +1,7 @@
 import { ElementExtends } from './ElementExtends'
 import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
-import { RECYCLE } from './consts/attributeNames'
+import { RECYCLE, TEXT } from './consts/attributeNames'
+import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
 import { getKey } from './getKey'
 import { removeElement } from './removeElement'
@@ -27,8 +28,8 @@ export function patch(
     }
 
     element = newElement
-  } else if (oldNode.name == null) {
-    element.nodeValue = node
+  } else if (oldNode.name === TEXT_NODE) {
+    element.nodeValue = node[ATTRIBUTES][TEXT]
   } else {
     updateElement(
       element,

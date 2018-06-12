@@ -1,5 +1,6 @@
-import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
-import { CONTEXT, EXTRA } from './consts/attributeNames'
+import { ATTRIBUTES, CHILDREN, NAME } from './consts/vdomAttributeNames'
+import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
+import { TEXT_NODE } from './consts/tagNames'
 import { resolveNode } from './resolveNode'
 import { updateAttribute } from './updateAttribute'
 
@@ -9,12 +10,13 @@ export function createElement(
   isSVG: Boolean,
   eventListener
 ) {
+  const isTextNode = node[NAME] === TEXT_NODE
   const element =
-    typeof node === "string" || typeof node === "number"
-      ? document.createTextNode(node as string)
-      : (isSVG = isSVG || node.name === "svg")
-        ? document.createElementNS("http://www.w3.org/2000/svg", node.name)
-        : document.createElement(node.name)
+    isTextNode
+      ? document.createTextNode(node[ATTRIBUTES][TEXT] as string)
+      : (isSVG = isSVG || node[NAME] === "svg")
+        ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
+        : document.createElement(node[NAME])
 
   const attributes = node[ATTRIBUTES]
   if (attributes) {
@@ -25,17 +27,21 @@ export function createElement(
       })
     }
 
-    for (let i = 0; i < node[CHILDREN].length; i++) {
-      element.appendChild(createElement(
-        (node[CHILDREN][i] = resolveNode(node[CHILDREN][i], node)),
-        lifecycle,
-        isSVG,
-        eventListener
-      ))
-    }
+    if (isTextNode) {
+      element.nodeValue = node[ATTRIBUTES][TEXT]
+    } else {
+      for (let i = 0; i < node[CHILDREN].length; i++) {
+        element.appendChild(createElement(
+          (node[CHILDREN][i] = resolveNode(node[CHILDREN][i], node)),
+          lifecycle,
+          isSVG,
+          eventListener
+        ))
+      }
 
-    for (const name in attributes) {
-      updateAttribute(element, name, attributes[name], null, isSVG, eventListener)
+      for (const name in attributes) {
+        updateAttribute(element, name, attributes[name], null, isSVG, eventListener)
+      }
     }
 
     element.context = attributes[CONTEXT]
