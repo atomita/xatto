@@ -1,5 +1,4 @@
 import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
-import { CONTEXT, EXTRA } from './consts/attributeNames'
 
 export function removeChildren(element, node) {
   const attributes = node[ATTRIBUTES]
@@ -9,7 +8,7 @@ export function removeChildren(element, node) {
     }
 
     if (attributes.ondestroy) {
-      attributes.ondestroy(element, attributes, attributes[CONTEXT], attributes[EXTRA])
+      attributes.ondestroy(element, attributes)
     }
   }
   return element

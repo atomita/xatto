@@ -1,5 +1,5 @@
 import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames';
-import { CONTEXT, RECYCLE } from './consts/attributeNames'
+import { CONTEXT, XA_CONTEXT } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
@@ -17,7 +17,9 @@ export function atto(
 
   const attributes = oldNode && oldNode[ATTRIBUTES] || {}
 
-  const rootContext: any = attributes[CONTEXT] = {}
+  const rootContext: any = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {} // todo mixed to be deprecated
+  deepSet(attributes, CONTEXT, rootContext)
+  attributes[XA_CONTEXT] = rootContext // todo to be deprecated
 
   function mutate(context: any, actualContext = rootContext, path: string | null = null) {
     if (context && context !== actualContext) {
@@ -65,8 +67,6 @@ export function atto(
       'svg' === node.name,
       eventListener
     )
-
-    attributes[RECYCLE] = false
 
     while (lifecycle.length) lifecycle.pop()!()
   }

@@ -1,5 +1,6 @@
-import { CONTEXT, EXTRA, RECYCLE } from './consts/attributeNames'
+import { CONTEXT, EXTRA, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
+import { deepGet } from './deepGet'
 import { updateAttribute } from './updateAttribute'
 
 export function updateElement(
@@ -32,13 +33,15 @@ export function updateElement(
     }
   }
 
-  element.context = attributes[CONTEXT]
-  element.extra = attributes[EXTRA]
+  element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT]
+  element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA]
 
-  const callback = attributes[RECYCLE] ? attributes.oncreate : attributes.onupdate
+  const callback = element.recycle ? attributes.oncreate : attributes.onupdate
+  element.recycle = false
+
   if (callback) {
     lifecycle.push(function() {
-      callback(element, oldAttributes, attributes[CONTEXT], attributes[EXTRA])
+      callback(element, oldAttributes, attributes)
     })
   }
 }

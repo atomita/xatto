@@ -1,8 +1,9 @@
 import { ElementExtends } from './ElementExtends'
 import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
-import { RECYCLE, TEXT } from './consts/attributeNames'
+import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
+import { deepGet } from './deepGet'
 import { getKey } from './getKey'
 import { removeElement } from './removeElement'
 import { resolveNode } from './resolveNode'
@@ -29,7 +30,7 @@ export function patch(
 
     element = newElement
   } else if (oldNode.name === TEXT_NODE) {
-    element.nodeValue = node[ATTRIBUTES][TEXT]
+    element.nodeValue = deepGet(node[ATTRIBUTES], TEXT)
   } else {
     updateElement(
       element,
@@ -75,9 +76,7 @@ export function patch(
         continue
       }
 
-      const recycle = (children[k][ATTRIBUTES] || {})[RECYCLE]
-
-      if (newKey == null || true === recycle) {
+      if (newKey == null || true === element.recycle) {
         if (oldKey == null) {
           patch(
             element,

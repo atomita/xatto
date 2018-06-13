@@ -1,6 +1,8 @@
 import { ATTRIBUTES, CHILDREN, NAME } from './consts/vdomAttributeNames'
-import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
+import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
+import { deepGet } from './deepGet'
+import { deepSet } from './deepSet'
 import { resolveNode } from './resolveNode'
 import { updateAttribute } from './updateAttribute'
 
@@ -10,20 +12,25 @@ export function createElement(
   isSVG: Boolean,
   eventListener
 ) {
+  const attributes = node[ATTRIBUTES]
   const isTextNode = node[NAME] === TEXT_NODE
   const element =
     isTextNode
-      ? document.createTextNode(node[ATTRIBUTES][TEXT] as string)
+      ? document.createTextNode(deepGet(attributes, TEXT) as string)
       : (isSVG = isSVG || node[NAME] === "svg")
         ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
         : document.createElement(node[NAME])
 
-  const attributes = node[ATTRIBUTES]
   if (attributes) {
     const callback = attributes.oncreate
     if (callback) {
       lifecycle.push(function() {
-        callback(element, {}, attributes[CONTEXT], attributes[EXTRA])
+        callback(
+          element,
+          {},
+          deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT], // todo mixed to be deprecated
+          deepGet(attributes, EXTRA) || attributes[XA_EXTRA] // todo mixed to be deprecated
+        )
       })
     }
 
@@ -44,8 +51,8 @@ export function createElement(
       }
     }
 
-    element.context = attributes[CONTEXT]
-    element.extra = attributes[EXTRA]
+    element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] // todo mixed to be deprecated
+    element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] // todo mixed to be deprecated
   }
 
   return element
