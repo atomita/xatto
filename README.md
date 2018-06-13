@@ -71,3 +71,39 @@ atto(view, document.getElementById("app"))({
 ```
 
 https://codepen.io/atomita/pen/pKwjKq
+
+### The counters.
+
+```jsx
+// @jsx x
+import { x, atto } from "xatto"
+
+const down = (event, context) => ({ count: context.count - 1 })
+const up = (event, context) => ({ count: context.count + 1 })
+
+const Counter = ({ xa: { context }, ...attrs }, children) => (
+  <div>
+    <h1>{context.count}</h1>
+    <button onclick={down}>-</button>
+    <button onclick={up}>+</button>
+  </div>
+)
+
+const view = ({ xa: { context }, ...attrs }, children) => {
+  return (
+    <div>
+      <Counter xa={{ slice: "counters.0" }} />
+      <Counter xa={{ slice: "counters.1" }} />
+    </div>
+  )
+}
+
+atto(view, document.getElementById("app"))({
+  counters: [
+    { count: 0 },
+    { count: 10 }
+  ]
+})
+```
+
+https://codepen.io/atomita/pen/eKRpmP
