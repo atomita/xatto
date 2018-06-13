@@ -9,11 +9,16 @@
   var KEY = 'key';
   var NAME = 'name';
 
-  var CONTEXT = 'xa-context';
-  var EXTRA = 'xa-extra';
-  var RECYCLE = 'xa-recycle';
-  var SLICE = 'xa-slice';
-  var TEXT = 'xa-text';
+  var CONTEXT = 'xa.context';
+  var EXTRA = 'xa.extra';
+  var SLICE = 'xa.slice';
+  var TEXT = 'xa.text';
+  /*
+   * Attributes to be deprecated in v1
+   */
+  var XA_CONTEXT = 'xa-context';
+  var XA_EXTRA = 'xa-extra';
+  var XA_SLICE = 'xa-slice';
 
   /**
    * Get an item from an object using separator notation.
@@ -98,10 +103,12 @@
   function resolveNode(node, parentNode) {
       var attributes = node && node[ATTRIBUTES];
       if (attributes) {
-          var context = attributes[CONTEXT]
-              || (parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][CONTEXT])
-              || {};
-          var slice = attributes[SLICE];
+          var context = deepGet(attributes, CONTEXT)
+              || attributes[XA_CONTEXT]
+              || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
+                  || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
+              || {}; // todo mixed to be deprecated
+          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE];
           var sliced = void 0;
           if ('object' !== typeof slice) {
               slice = [slice];
@@ -116,9 +123,12 @@
               }
               context = sliced;
           }
-          var extra = __assign({}, (attributes[EXTRA] || {}), (parentNode && parentNode[ATTRIBUTES] && parentNode[ATTRIBUTES][EXTRA] || {}));
-          attributes[CONTEXT] = context;
-          attributes[EXTRA] = extra;
+          var extra = __assign({}, (deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + EXTRA)
+              || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
+          deepSet(attributes, CONTEXT, context);
+          deepSet(attributes, EXTRA, extra);
+          attributes[XA_CONTEXT] = context; // todo to be deprecated
+          attributes[XA_EXTRA] = extra; // todo to be deprecated
       }
       return (node && typeof node.name === "function")
           ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
@@ -159,22 +169,24 @@
   }
 
   function createElement(node, lifecycle, isSVG, eventListener) {
+      var attributes = node[ATTRIBUTES];
       var isTextNode = node[NAME] === TEXT_NODE;
       var element = isTextNode
-          ? document.createTextNode(node[ATTRIBUTES][TEXT])
+          ? document.createTextNode(deepGet(attributes, TEXT))
           : (isSVG = isSVG || node[NAME] === "svg")
               ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
               : document.createElement(node[NAME]);
-      var attributes = node[ATTRIBUTES];
       if (attributes) {
           var callback_1 = attributes.oncreate;
           if (callback_1) {
               lifecycle.push(function () {
-                  callback_1(element, {}, attributes[CONTEXT], attributes[EXTRA]);
+                  callback_1(element, {}, deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT], // todo mixed to be deprecated
+                  deepGet(attributes, EXTRA) || attributes[XA_EXTRA] // todo mixed to be deprecated
+                  );
               });
           }
           if (isTextNode) {
-              element.nodeValue = node[ATTRIBUTES][TEXT];
+              // noop
           }
           else {
               for (var i = 0; i < node[CHILDREN].length; i++) {
@@ -184,8 +196,8 @@
                   updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
               }
           }
-          element.context = attributes[CONTEXT];
-          element.extra = attributes[EXTRA];
+          element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT]; // todo mixed to be deprecated
+          element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA]; // todo mixed to be deprecated
       }
       return element;
   }
@@ -201,7 +213,7 @@
               removeChildren(element.childNodes[i], node[CHILDREN][i]);
           }
           if (attributes.ondestroy) {
-              attributes.ondestroy(element, attributes, attributes[CONTEXT], attributes[EXTRA]);
+              attributes.ondestroy(element, attributes);
           }
       }
       return element;
@@ -214,7 +226,7 @@
       var attributes = node[ATTRIBUTES] || {};
       var cb = attributes.onremove;
       if (cb) {
-          cb(element, done, attributes, attributes[CONTEXT], attributes[EXTRA]);
+          cb(element, done, attributes);
       }
       else {
           done();
@@ -231,12 +243,13 @@
               updateAttribute(element, name_1, attributes[name_1], oldAttributes[name_1], isSVG, eventListener);
           }
       }
-      element.context = attributes[CONTEXT];
-      element.extra = attributes[EXTRA];
-      var callback = attributes[RECYCLE] ? attributes.oncreate : attributes.onupdate;
+      element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT];
+      element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA];
+      var callback = element.recycle ? attributes.oncreate : attributes.onupdate;
+      element.recycle = false;
       if (callback) {
           lifecycle.push(function () {
-              callback(element, oldAttributes, attributes[CONTEXT], attributes[EXTRA]);
+              callback(element, oldAttributes, attributes);
           });
       }
   }
@@ -255,7 +268,7 @@
           element = newElement;
       }
       else if (oldNode.name === TEXT_NODE) {
-          element.nodeValue = node[ATTRIBUTES][TEXT];
+          element.nodeValue = deepGet(node[ATTRIBUTES], TEXT);
       }
       else {
           updateElement(element, oldNode[ATTRIBUTES], node[ATTRIBUTES], lifecycle, (isSVG = isSVG || node.name === "svg"), eventListener);
@@ -287,8 +300,7 @@
                   i++;
                   continue;
               }
-              var recycle = (children[k][ATTRIBUTES] || {})[RECYCLE];
-              if (newKey == null || true === recycle) {
+              if (newKey == null || true === element.recycle) {
                   if (oldKey == null) {
                       patch(element, oldElements[i], oldChildren[i], children[k], lifecycle, isSVG, eventListener);
                       k++;
@@ -336,7 +348,7 @@
       node[KEY] = attributes.key;
       if (mayBeTextNode && 'function' !== typeof name) {
           node[NAME] = TEXT_NODE;
-          node[ATTRIBUTES][TEXT] = name;
+          deepSet(node[ATTRIBUTES], TEXT, name);
       }
       return node;
   }
@@ -372,7 +384,9 @@
       if (oldNode === void 0) { oldNode = null; }
       var scheduled = false;
       var attributes = oldNode && oldNode[ATTRIBUTES] || {};
-      var rootContext = attributes[CONTEXT] = {};
+      var rootContext = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
+      deepSet(attributes, CONTEXT, rootContext);
+      attributes[XA_CONTEXT] = rootContext; // todo to be deprecated
       function mutate(context, actualContext, path) {
           if (actualContext === void 0) { actualContext = rootContext; }
           if (path === void 0) { path = null; }
@@ -408,7 +422,6 @@
           var lifecycle = [];
           var node = resolveNode(x(view, attributes, oldNode && oldNode[CHILDREN]), x('div', {}, []));
           element = patch(element.parentNode, element, oldNode, (oldNode = node), lifecycle, 'svg' === node.name, eventListener);
-          attributes[RECYCLE] = false;
           while (lifecycle.length)
               lifecycle.pop()();
       }

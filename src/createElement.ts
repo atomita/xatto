@@ -35,7 +35,7 @@ export function createElement(
     }
 
     if (isTextNode) {
-      element.nodeValue = node[ATTRIBUTES][TEXT]
+      // noop
     } else {
       for (let i = 0; i < node[CHILDREN].length; i++) {
         element.appendChild(createElement(
