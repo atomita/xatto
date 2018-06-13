@@ -94,6 +94,7 @@ const view = ({ xa: { context }, ...attrs }, children) => {
     <div>
       <Counter xa={{ slice: "counters.0" }} />
       <Counter xa={{ slice: "counters.1" }} />
+      <Counter xa={{ slice: ["counters.2", { count: 20 }] }} />
     </div>
   )
 }
