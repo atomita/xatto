@@ -1,6 +1,6 @@
-import { ATTRIBUTES, CHILDREN, KEY, NAME } from './consts/vdomAttributeNames'
+import { ATTRIBUTES, CHILDREN, KEY, NAME } from './consts/vNodeAttributeNames'
 
-export function isVDOM(value) {
+export function isVNode(value) {
   return 'object' === typeof value
     && ATTRIBUTES in value
     && CHILDREN in value

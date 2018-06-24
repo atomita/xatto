@@ -1,9 +1,9 @@
-export interface VDOM {
+export interface VNode {
   name: any;
 
   attributes: any;
 
-  children: VDOM[];
+  children: VNode[];
 
   key: any;
 }

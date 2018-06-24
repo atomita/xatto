@@ -1,4 +1,4 @@
-import { ATTRIBUTES } from './consts/vdomAttributeNames'
+import { ATTRIBUTES } from './consts/vNodeAttributeNames'
 import { removeChildren } from './removeChildren'
 
 export function removeElement(parent, element, node) {

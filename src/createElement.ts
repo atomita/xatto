@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN, NAME } from './consts/vdomAttributeNames'
+import { ATTRIBUTES, CHILDREN, NAME } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { deepGet } from './deepGet'

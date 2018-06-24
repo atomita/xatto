@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames';
+import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames';
 import { CONTEXT, XA_CONTEXT } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { deepGet } from './deepGet'

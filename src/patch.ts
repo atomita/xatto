@@ -1,5 +1,5 @@
 import { ElementExtends } from './ElementExtends'
-import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'

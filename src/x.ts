@@ -1,18 +1,18 @@
-import { VDOM } from './VDOM'
-import { createVDOM } from './createVDOM'
-import { isVDOM } from './isVDOM'
+import { VNode } from './VNode'
+import { createVNode } from './createVNode'
+import { isVNode } from './isVNode'
 
-export function x(name, attributes, ...rest): VDOM {
-  const children: VDOM[] = []
+export function x(name, attributes, ...rest): VNode {
+  const children: VNode[] = []
 
   while (rest.length) {
     const node = rest.pop()
     if (node && Array.isArray(node)) {
       rest = rest.concat(node)
     } else if (node != null && node !== true && node !== false) {
-      children.unshift(isVDOM(node) && node || createVDOM(true, node))
+      children.unshift(isVNode(node) && node || createVNode(true, node))
     }
   }
 
-  return createVDOM(false, name, attributes || {}, children)
+  return createVNode(false, name, attributes || {}, children)
 }

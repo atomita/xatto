@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN } from './consts/vdomAttributeNames'
+import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, SLICE, XA_CONTEXT, XA_EXTRA, XA_SLICE } from './consts/attributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'

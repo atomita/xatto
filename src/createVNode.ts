@@ -1,11 +1,11 @@
-import { ATTRIBUTES, CHILDREN, KEY, NAME } from './consts/vdomAttributeNames'
+import { ATTRIBUTES, CHILDREN, KEY, NAME } from './consts/vNodeAttributeNames'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
-import { VDOM } from './VDOM'
+import { VNode } from './VNode'
 import { deepSet } from './deepSet'
-import { isVDOM } from './isVDOM'
+import { isVNode } from './isVNode'
 
-export function createVDOM(mayBeTextNode, name, attributes: any = {}, children: VDOM[] = []): VDOM {
+export function createVNode(mayBeTextNode, name, attributes: any = {}, children: VNode[] = []): VNode {
   const node: any = {}
 
   node[NAME] = name
@@ -18,5 +18,5 @@ export function createVDOM(mayBeTextNode, name, attributes: any = {}, children: 
     deepSet(node[ATTRIBUTES], TEXT, name)
   }
 
-  return node as VDOM
+  return node as VNode
 }
