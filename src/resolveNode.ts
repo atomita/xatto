@@ -2,6 +2,7 @@ import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, SLICE, XA_CONTEXT, XA_EXTRA, XA_SLICE } from './consts/attributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
+import { isVNode } from './isVNode'
 
 export function resolveNode(node, parentNode) {
   const attributes = node && node[ATTRIBUTES]
@@ -45,9 +46,20 @@ export function resolveNode(node, parentNode) {
     attributes[XA_EXTRA] = extra // todo to be deprecated
   }
 
-  return (node && typeof node.name === "function")
+  const resolved = (node && typeof node.name === "function")
     ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
-    : node != null
-      ? node
-      : ""
+    : node
+
+  if (isVNode(resolved)) {
+    resolved[CHILDREN] = resolved[CHILDREN].reduce((acc, child) => {
+      const reslvedChild = resolveNode(child, resolved)
+      if (reslvedChild) {
+        acc.push(reslvedChild)
+      }
+      return acc
+    }, [])
+    return resolved
+  }
+
+  return null
 }

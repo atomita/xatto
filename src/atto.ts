@@ -4,18 +4,28 @@ import { ElementExtends } from './ElementExtends'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { patch } from './patch'
+import { pickLifecycleEvents } from './pickLifecycleEvents'
 import { resolveNode } from './resolveNode'
+import { mergeGlueNode } from './mergeGlueNode'
 import { x } from './x'
 
 export function atto(
   view: (attributes: any, children: any[]) => any,
-  element: Element & ElementExtends,
-  oldNode: any = null
+  elementOrGlueNode: Element & ElementExtends | any
 ) {
 
   let scheduled = false
 
-  const attributes = oldNode && oldNode[ATTRIBUTES] || {}
+  let glueNode = elementOrGlueNode instanceof Element
+    ? {
+      name: elementOrGlueNode.nodeName,
+      attributes: {},
+      children: [],
+      element: elementOrGlueNode
+    }
+    : elementOrGlueNode
+
+  const attributes = glueNode[ATTRIBUTES]
 
   const rootContext: any = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {} // todo mixed to be deprecated
   deepSet(attributes, CONTEXT, rootContext)
@@ -54,21 +64,27 @@ export function atto(
   }
 
   function render() {
-    const lifecycle: Array<() => any> = []
+    const lifecycleEvents: Function[] = []
 
-    const node = resolveNode(x(view, attributes, oldNode && oldNode[CHILDREN]), x('div', {}, []))
-
-    element = patch(
-      element.parentNode as Element,
-      element,
-      oldNode,
-      (oldNode = node),
-      lifecycle,
-      'svg' === node.name,
-      eventListener
+    const node = mergeGlueNode(
+      resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])),
+      glueNode
     )
 
-    while (lifecycle.length) lifecycle.pop()!()
+    const patchStack = [
+      pickLifecycleEvents(lifecycleEvents, mutate)
+    ].reduce(
+      (acc, stack) => stack(acc),
+      patch((...args) => patchStack.apply(null, args)))
+
+    glueNode = patchStack(
+      node,
+      'svg' === node.name,
+      eventListener,
+      false
+    )
+
+    lifecycleEvents.reduce((_, lifecycleEvent) => lifecycleEvent(), 0)
   }
 
   function rendered() {
