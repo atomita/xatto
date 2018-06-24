@@ -13,21 +13,21 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
   ) => {
     const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
-    const newGlueNode = stack(glueNode, isSVG, eventListener, isDestroy)
+    glueNode = stack(glueNode, isSVG, eventListener, isDestroy)
 
     let lifecycleEvent: Function | undefined
 
     switch (lifecycle) {
       case CREATE:
-        lifecycleEvent = deepGet(newGlueNode, lifeCycleEventPath(CREATE))
+        lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(CREATE))
         break
       case UPDATE:
-        lifecycleEvent = deepGet(newGlueNode, lifeCycleEventPath(UPDATE))
+        lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(UPDATE))
         break
       case REMOVE:
-        const onremove: Function = deepGet(newGlueNode, lifeCycleEventPath(REMOVE))
+        const onremove: Function = deepGet(glueNode, lifeCycleEventPath(REMOVE))
         const done = () => {
-          newGlueNode[LIFECYCLE] = DESTROY
+          glueNode[LIFECYCLE] = DESTROY
           Promise.resolve().then(mutate as any)
         }
         lifecycleEvent = (element, attrs, prevAttrs) => {
@@ -35,16 +35,16 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
         }
         break
       case DESTROY:
-        lifecycleEvent = deepGet(newGlueNode, lifeCycleEventPath(DESTROY))
+        lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(DESTROY))
         break
     }
 
     if (lifecycleEvent) {
       lifecycleEvents.push(() => {
-        lifecycleEvent!(newGlueNode[ELEMENT], newGlueNode[ATTRIBUTES], deepGet(newGlueNode, PREV_ATTRIBUTES))
+        lifecycleEvent!(glueNode[ELEMENT], glueNode[ATTRIBUTES], deepGet(glueNode, PREV_ATTRIBUTES))
       })
     }
 
-    return newGlueNode
+    return glueNode
   }
 }
