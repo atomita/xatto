@@ -1,2 +1,1 @@
-import { ElementExtends } from './ElementExtends';
-export declare function patch(parent: Element, element: Element & ElementExtends, oldNode: any, node: any, lifecycle: Array<() => void>, isSVG: boolean | undefined, eventListener: any): Element & ElementExtends;
+export declare function patch(patchStack: Function): (glueNode: any, isSVG: any, eventListener: any, isDestroy: any) => any;

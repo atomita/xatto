@@ -75,67 +75,18 @@
       }
   }
 
+  var CREATE = 'create';
+  var DESTROY = 'destroy';
+  var REMOVE = 'remove';
+  var REMOVING = 'removing';
+  var UPDATE = 'update';
+
+  var ELEMENT = 'element';
+  var LIFECYCLE = 'lifecycle';
+  var PREV = 'prev';
+  var PREV_ATTRIBUTES = PREV + "." + ATTRIBUTES;
+
   var TEXT_NODE = 'xa-txt';
-
-  /*! *****************************************************************************
-  Copyright (c) Microsoft Corporation. All rights reserved.
-  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-  this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.apache.org/licenses/LICENSE-2.0
-
-  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
-  MERCHANTABLITY OR NON-INFRINGEMENT.
-
-  See the Apache Version 2.0 License for specific language governing permissions
-  and limitations under the License.
-  ***************************************************************************** */
-
-  var __assign = Object.assign || function __assign(t) {
-      for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-      }
-      return t;
-  };
-
-  function resolveNode(node, parentNode) {
-      var attributes = node && node[ATTRIBUTES];
-      if (attributes) {
-          var context = deepGet(attributes, CONTEXT)
-              || attributes[XA_CONTEXT]
-              || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
-                  || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
-              || {}; // todo mixed to be deprecated
-          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE];
-          var sliced = void 0;
-          if ('object' !== typeof slice) {
-              slice = [slice];
-          }
-          var path = slice[0];
-          if (path) {
-              sliced = deepGet(context, path);
-              if (!sliced) {
-                  var defaultValue = slice[1] || {};
-                  sliced = __assign({}, defaultValue);
-                  deepSet(context, path, sliced);
-              }
-              context = sliced;
-          }
-          var extra = __assign({}, (deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + EXTRA)
-              || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
-          deepSet(attributes, CONTEXT, context);
-          deepSet(attributes, EXTRA, extra);
-          attributes[XA_CONTEXT] = context; // todo to be deprecated
-          attributes[XA_EXTRA] = extra; // todo to be deprecated
-      }
-      return (node && typeof node.name === "function")
-          ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
-          : node != null
-              ? node
-              : "";
-  }
 
   function updateAttribute(element, name, value, oldValue, isSVG, eventListener) {
       if (name === "key" || 'object' === typeof value) {
@@ -168,177 +119,264 @@
       }
   }
 
-  function createElement(node, lifecycle, isSVG, eventListener) {
-      var attributes = node[ATTRIBUTES];
-      var isTextNode = node[NAME] === TEXT_NODE;
-      var element = isTextNode
-          ? document.createTextNode(deepGet(attributes, TEXT))
-          : (isSVG = isSVG || node[NAME] === "svg")
-              ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
-              : document.createElement(node[NAME]);
-      if (attributes) {
-          var callback_1 = attributes.oncreate;
-          if (callback_1) {
-              lifecycle.push(function () {
-                  callback_1(element, {}, deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT], // todo mixed to be deprecated
-                  deepGet(attributes, EXTRA) || attributes[XA_EXTRA] // todo mixed to be deprecated
-                  );
-              });
-          }
-          if (isTextNode) {
-              // noop
-          }
-          else {
-              for (var i = 0; i < node[CHILDREN].length; i++) {
-                  element.appendChild(createElement((node[CHILDREN][i] = resolveNode(node[CHILDREN][i], node)), lifecycle, isSVG, eventListener));
-              }
-              for (var name_1 in attributes) {
-                  updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
-              }
-          }
-          element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT]; // todo mixed to be deprecated
-          element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA]; // todo mixed to be deprecated
-      }
-      return element;
-  }
-
-  function getKey(node) {
-      return node ? node.key : null;
-  }
-
-  function removeChildren(element, node) {
-      var attributes = node[ATTRIBUTES];
-      if (attributes) {
-          for (var i = 0; i < node[CHILDREN].length; i++) {
-              removeChildren(element.childNodes[i], node[CHILDREN][i]);
-          }
-          if (attributes.ondestroy) {
-              attributes.ondestroy(element, attributes);
-          }
-      }
-      return element;
-  }
-
-  function removeElement(parent, element, node) {
-      function done() {
-          parent.removeChild(removeChildren(element, node));
-      }
+  function createElement(node, isSVG, eventListener) {
       var attributes = node[ATTRIBUTES] || {};
-      var cb = attributes.onremove;
-      if (cb) {
-          cb(element, done, attributes);
+      if (node[NAME] === TEXT_NODE) {
+          return document.createTextNode(deepGet(attributes, TEXT));
       }
-      else {
-          done();
+      var element = (isSVG = isSVG || node[NAME] === "svg")
+          ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
+          : document.createElement(node[NAME]);
+      for (var name_1 in attributes) {
+          updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
       }
+      element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {}; // todo mixed to be deprecated
+      element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] || {}; // todo mixed to be deprecated
+      return element;
   }
 
-  function updateElement(element, oldAttributes, attributes, lifecycle, isSVG, eventListener) {
-      var attrs = __assign({}, oldAttributes, attributes);
-      for (var name_1 in attrs) {
+  function updateElement(node, isSVG, eventListener) {
+      var element = node[ELEMENT];
+      var attributes = node[ATTRIBUTES];
+      if (node[NAME] === TEXT_NODE) {
+          element.nodeValue = deepGet(attributes, TEXT);
+          return element;
+      }
+      var prevAttributes = deepGet(node, PREV_ATTRIBUTES) || {};
+      for (var name_1 in attributes) {
           if (attributes[name_1] !==
               (name_1 === "value" || name_1 === "checked"
                   ? element[name_1]
-                  : oldAttributes[name_1])) {
-              updateAttribute(element, name_1, attributes[name_1], oldAttributes[name_1], isSVG, eventListener);
+                  : prevAttributes[name_1])) {
+              updateAttribute(element, name_1, attributes[name_1], prevAttributes[name_1], isSVG, eventListener);
           }
       }
-      element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT];
-      element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA];
-      var callback = element.recycle ? attributes.oncreate : attributes.onupdate;
-      element.recycle = false;
-      if (callback) {
-          lifecycle.push(function () {
-              callback(element, oldAttributes, attributes);
-          });
-      }
-  }
-
-  function patch(parent, element, oldNode, node, lifecycle, isSVG, eventListener) {
-      if (isSVG === void 0) { isSVG = false; }
-      if (node === oldNode) {
-          // noop
-      }
-      else if (oldNode == null || oldNode.name !== node.name) {
-          var newElement = createElement(node, lifecycle, isSVG, eventListener);
-          parent.insertBefore(newElement, element);
-          if (oldNode != null) {
-              removeElement(parent, element, oldNode);
-          }
-          element = newElement;
-      }
-      else if (oldNode.name === TEXT_NODE) {
-          element.nodeValue = deepGet(node[ATTRIBUTES], TEXT);
-      }
-      else {
-          updateElement(element, oldNode[ATTRIBUTES], node[ATTRIBUTES], lifecycle, (isSVG = isSVG || node.name === "svg"), eventListener);
-          var oldKeyed = {};
-          var newKeyed = {};
-          var oldElements = [];
-          var oldChildren = oldNode[CHILDREN];
-          var children = node[CHILDREN];
-          for (var i_1 = 0; i_1 < oldChildren.length; i_1++) {
-              oldElements[i_1] = element.childNodes[i_1];
-              var oldKey = getKey(oldChildren[i_1]);
-              if (oldKey != null) {
-                  oldKeyed[oldKey] = [oldElements[i_1], oldChildren[i_1]];
-              }
-          }
-          var i = 0;
-          var k = 0;
-          while (k < children.length) {
-              var oldKey = getKey(oldChildren[i]);
-              var newKey = getKey(children[k] = resolveNode(children[k], node));
-              if (newKeyed[oldKey]) {
-                  i++;
-                  continue;
-              }
-              if (newKey != null && newKey === getKey(oldChildren[i + 1])) {
-                  if (oldKey == null) {
-                      removeElement(element, oldElements[i], oldChildren[i]);
-                  }
-                  i++;
-                  continue;
-              }
-              if (newKey == null || true === element.recycle) {
-                  if (oldKey == null) {
-                      patch(element, oldElements[i], oldChildren[i], children[k], lifecycle, isSVG, eventListener);
-                      k++;
-                  }
-                  i++;
-              }
-              else {
-                  var keyed = oldKeyed[newKey] || [];
-                  if (oldKey === newKey) {
-                      patch(element, keyed[0], keyed[1], children[k], lifecycle, isSVG, eventListener);
-                      i++;
-                  }
-                  else if (keyed[0]) {
-                      patch(element, element.insertBefore(keyed[0], oldElements[i]), keyed[1], children[k], lifecycle, isSVG, eventListener);
-                  }
-                  else {
-                      patch(element, oldElements[i], null, children[k], lifecycle, isSVG, eventListener);
-                  }
-                  newKeyed[newKey] = children[k];
-                  k++;
-              }
-          }
-          while (i < oldChildren.length) {
-              if (getKey(oldChildren[i]) == null) {
-                  removeElement(element, oldElements[i], oldChildren[i]);
-              }
-              i++;
-          }
-          for (var key in oldKeyed) {
-              if (!newKeyed[key]) {
-                  removeElement(element, oldKeyed[key][0], oldKeyed[key][1]);
-              }
-          }
-      }
+      element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
+      element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}; // todo mixed to be deprecated
       return element;
   }
 
-  function createVDOM(mayBeTextNode, name, attributes, children) {
+  function patch(patchStack) {
+      return function (glueNode, isSVG, eventListener, isDestroy) {
+          var element;
+          if (!isSVG && glueNode[NAME] === 'svg') {
+              isSVG = true;
+          }
+          if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
+              isDestroy = true;
+          }
+          var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
+              var patchedChild = patchStack(childNode, isSVG, eventListener, isDestroy);
+              return patchedChild ? acc.concat(patchedChild) : acc;
+          }, []);
+          var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
+          switch (lifecycle) {
+              case CREATE:
+                  element = createElement(glueNode, isSVG, eventListener);
+                  break;
+              case UPDATE:
+                  element = updateElement(glueNode, isSVG, eventListener);
+                  break;
+              case DESTROY:
+                  if (glueNode[LIFECYCLE] === DESTROY) {
+                      element = glueNode[ELEMENT];
+                      element.parentElement.removeChild(element);
+                  }
+                  return null;
+              case REMOVE:
+                  glueNode[LIFECYCLE] = REMOVING;
+              default:
+                  element = glueNode[ELEMENT];
+          }
+          children.map(function (v) { return v.element; }).reduceRight(function (ref, elm) {
+              element.insertBefore(elm, ref);
+              return elm;
+          }, null);
+          glueNode[CHILDREN] = children;
+          glueNode[ELEMENT] = element;
+          return glueNode;
+      };
+  }
+
+  var lifeCycleEventPath = function (name) { return ATTRIBUTES + ".on" + name; };
+
+  function pickLifecycleEvents(lifecycleEvents, mutate) {
+      return function (stack) { return function (glueNode, isSVG, eventListener, isDestroy) {
+          if (isDestroy === void 0) { isDestroy = false; }
+          var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
+          glueNode = stack(glueNode, isSVG, eventListener, isDestroy);
+          var lifecycleEvent;
+          switch (lifecycle) {
+              case CREATE:
+                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(CREATE));
+                  break;
+              case UPDATE:
+                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(UPDATE));
+                  break;
+              case REMOVE:
+                  var onremove_1 = deepGet(glueNode, lifeCycleEventPath(REMOVE));
+                  var done_1 = function () {
+                      glueNode[LIFECYCLE] = DESTROY;
+                      Promise.resolve().then(mutate);
+                  };
+                  lifecycleEvent = function (element, attrs, prevAttrs) {
+                      onremove_1(element, done_1, attrs, prevAttrs);
+                  };
+                  break;
+              case DESTROY:
+                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(DESTROY));
+                  break;
+          }
+          if (lifecycleEvent) {
+              lifecycleEvents.push(function () {
+                  lifecycleEvent(glueNode[ELEMENT], glueNode[ATTRIBUTES], deepGet(glueNode, PREV_ATTRIBUTES));
+              });
+          }
+          return glueNode;
+      }; };
+  }
+
+  /*! *****************************************************************************
+  Copyright (c) Microsoft Corporation. All rights reserved.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at http://www.apache.org/licenses/LICENSE-2.0
+
+  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+  MERCHANTABLITY OR NON-INFRINGEMENT.
+
+  See the Apache Version 2.0 License for specific language governing permissions
+  and limitations under the License.
+  ***************************************************************************** */
+
+  var __assign = Object.assign || function __assign(t) {
+      for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+      }
+      return t;
+  };
+
+  function isVNode(value) {
+      return 'object' === typeof value
+          && ATTRIBUTES in value
+          && CHILDREN in value
+          && KEY in value
+          && NAME in value
+          && 4 === Object.keys(value).length;
+  }
+
+  function resolveNode(node, parentNode) {
+      var attributes = node && node[ATTRIBUTES];
+      if (attributes) {
+          var context = deepGet(attributes, CONTEXT)
+              || attributes[XA_CONTEXT]
+              || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
+                  || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
+              || {}; // todo mixed to be deprecated
+          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE];
+          var sliced = void 0;
+          if ('object' !== typeof slice) {
+              slice = [slice];
+          }
+          var path = slice[0];
+          if (path) {
+              sliced = deepGet(context, path);
+              if (!sliced) {
+                  var defaultValue = slice[1] || {};
+                  sliced = __assign({}, defaultValue);
+                  deepSet(context, path, sliced);
+              }
+              context = sliced;
+          }
+          var extra = __assign({}, (deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + EXTRA)
+              || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
+          deepSet(attributes, CONTEXT, context);
+          deepSet(attributes, EXTRA, extra);
+          attributes[XA_CONTEXT] = context; // todo to be deprecated
+          attributes[XA_EXTRA] = extra; // todo to be deprecated
+      }
+      var resolved = (node && typeof node.name === "function")
+          ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
+          : node;
+      if (isVNode(resolved)) {
+          resolved[CHILDREN] = resolved[CHILDREN].reduce(function (acc, child) {
+              var reslvedChild = resolveNode(child, resolved);
+              if (reslvedChild) {
+                  acc.push(reslvedChild);
+              }
+              return acc;
+          }, []);
+          return resolved;
+      }
+      return null;
+  }
+
+  function mergeGlueNode(vNode, glueNode) {
+      var newGlueNode;
+      if (!glueNode) {
+          newGlueNode = __assign({}, vNode);
+          newGlueNode[LIFECYCLE] = CREATE;
+          newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return mergeGlueNode(child, null); });
+          deepSet(newGlueNode, PREV_ATTRIBUTES, {});
+          return newGlueNode;
+      }
+      if (!vNode) {
+          deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
+          glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
+              ? glueNode[LIFECYCLE]
+              : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
+                  ? REMOVE
+                  : DESTROY);
+          return glueNode;
+      }
+      deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
+      glueNode[ATTRIBUTES] = vNode[ATTRIBUTES];
+      glueNode[KEY] = vNode[KEY];
+      glueNode[NAME] = vNode[NAME];
+      glueNode[LIFECYCLE] = UPDATE;
+      var indexedPrevChildren = glueNode[CHILDREN].map(function (child, i) { return (child.i = i, child); });
+      var children = vNode[CHILDREN].map(function (child) {
+          var prevChild, _prevChild, i;
+          for (i = 0; i < indexedPrevChildren.length; i++) {
+              _prevChild = indexedPrevChildren[i];
+              if (child[NAME] == _prevChild[NAME] && child[KEY] == _prevChild[KEY]) {
+                  prevChild = _prevChild;
+                  break;
+              }
+          }
+          if (prevChild) {
+              indexedPrevChildren.splice(i, 1);
+              return mergeGlueNode(child, prevChild);
+          }
+          else {
+              return mergeGlueNode(child, null);
+          }
+      });
+      indexedPrevChildren.reduceRight(function (_, child) {
+          child = mergeGlueNode(null, child);
+          if (0 === child.i) {
+              children.unshift(child);
+          }
+          else {
+              var index = child.i - 1;
+              var i = void 0;
+              for (i = 0; i < children.length; i++) {
+                  if (index === children[i].i) {
+                      children.splice(i + 1, 0, child);
+                      return;
+                  }
+              }
+              children.push(child);
+          }
+      }, 0);
+      glueNode[CHILDREN] = children;
+      return glueNode;
+  }
+
+  function createVNode(mayBeTextNode, name, attributes, children) {
       if (attributes === void 0) { attributes = {}; }
       if (children === void 0) { children = []; }
       var node = {};
@@ -353,15 +391,6 @@
       return node;
   }
 
-  function isVDOM(value) {
-      return 'object' === typeof value
-          && ATTRIBUTES in value
-          && CHILDREN in value
-          && KEY in value
-          && NAME in value
-          && 4 === Object.keys(value).length;
-  }
-
   function x(name, attributes) {
       var rest = [];
       for (var _i = 2; _i < arguments.length; _i++) {
@@ -374,16 +403,23 @@
               rest = rest.concat(node);
           }
           else if (node != null && node !== true && node !== false) {
-              children.unshift(isVDOM(node) && node || createVDOM(true, node));
+              children.unshift(isVNode(node) && node || createVNode(true, node));
           }
       }
-      return createVDOM(false, name, attributes || {}, children);
+      return createVNode(false, name, attributes || {}, children);
   }
 
-  function atto(view, element, oldNode) {
-      if (oldNode === void 0) { oldNode = null; }
+  function atto(view, elementOrGlueNode) {
       var scheduled = false;
-      var attributes = oldNode && oldNode[ATTRIBUTES] || {};
+      var glueNode = elementOrGlueNode instanceof Element
+          ? {
+              name: elementOrGlueNode.nodeName,
+              attributes: {},
+              children: [],
+              element: elementOrGlueNode
+          }
+          : elementOrGlueNode;
+      var attributes = glueNode[ATTRIBUTES];
       var rootContext = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
       deepSet(attributes, CONTEXT, rootContext);
       attributes[XA_CONTEXT] = rootContext; // todo to be deprecated
@@ -419,11 +455,19 @@
           mutate(context, element.context);
       }
       function render() {
-          var lifecycle = [];
-          var node = resolveNode(x(view, attributes, oldNode && oldNode[CHILDREN]), x('div', {}, []));
-          element = patch(element.parentNode, element, oldNode, (oldNode = node), lifecycle, 'svg' === node.name, eventListener);
-          while (lifecycle.length)
-              lifecycle.pop()();
+          var lifecycleEvents = [];
+          var node = mergeGlueNode(resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])), glueNode);
+          var patchStack = [
+              pickLifecycleEvents(lifecycleEvents, mutate)
+          ].reduce(function (acc, stack) { return stack(acc); }, patch(function () {
+              var args = [];
+              for (var _i = 0; _i < arguments.length; _i++) {
+                  args[_i] = arguments[_i];
+              }
+              return patchStack.apply(null, args);
+          }));
+          glueNode = patchStack(node, 'svg' === node.name, eventListener, false);
+          lifecycleEvents.reduce(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
       }
       function rendered() {
           scheduled = false;
