@@ -343,7 +343,9 @@
           for (i = 0; i < indexedPrevChildren.length; i++) {
               _prevChild = indexedPrevChildren[i];
               if (child[NAME] == _prevChild[NAME] && child[KEY] == _prevChild[KEY]) {
-                  prevChild = _prevChild;
+                  if (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE]) {
+                      prevChild = _prevChild;
+                  }
                   break;
               }
           }
