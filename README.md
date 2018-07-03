@@ -26,29 +26,7 @@ It is also available on a [CDN](https://unpkg.com).
 
 ## Examples
 
-### A counter that can be incremented or decremented
-
-```jsx
-// @jsx x
-import { x, atto } from "xatto"
-
-const down = (event, context) => ({ count: ~~context.count - 1 })
-const up = (event, context) => ({ count: ~~context.count + 1 })
-
-const view = ({ xa: { context }, ...attrs }, children) => (
-  <div>
-    <h1>{~~context.count}</h1>
-    <button onclick={down}>-</button>
-    <button onclick={up}>+</button>
-  </div>
-)
-
-atto(view, document.getElementById("app"))()
-```
-
-https://codepen.io/atomita/pen/PaYmVa
-
-### A counter that can be incremented or decremented with set the initial value.
+### A counter that can be incremented or decremented.
 
 ```jsx
 // @jsx x
