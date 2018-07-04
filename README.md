@@ -1,5 +1,6 @@
 # xatto
-xatto is a JavaScript framework for building web applications like Hyperapp.
+xatto is View Layer Library based on Function and Context using VirtualDOM.  
+This is developed by forking from [jorgebucaran/superfine](https://github.com/jorgebucaran/superfine).
 
 ## Getting Started
 
