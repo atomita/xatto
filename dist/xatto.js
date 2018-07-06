@@ -276,7 +276,7 @@
               || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
                   || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
               || {}; // todo mixed to be deprecated
-          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE];
+          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE]; // todo mixed to be deprecated
           var sliced = void 0;
           if ('object' !== typeof slice) {
               slice = [slice];
@@ -295,6 +295,7 @@
               || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
           deepSet(attributes, CONTEXT, context);
           deepSet(attributes, EXTRA, extra);
+          deepSet(attributes, SLICE, []);
           attributes[XA_CONTEXT] = context; // todo to be deprecated
           attributes[XA_EXTRA] = extra; // todo to be deprecated
       }
