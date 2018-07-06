@@ -426,11 +426,15 @@
       deepSet(attributes, CONTEXT, rootContext);
       attributes[XA_CONTEXT] = rootContext; // todo to be deprecated
       function mutate(context, actualContext, path) {
+          if (context === void 0) { context = null; }
           if (actualContext === void 0) { actualContext = rootContext; }
           if (path === void 0) { path = null; }
           if (context && context !== actualContext) {
-              if (context instanceof Promise) {
-                  context.then(function (newContext) { return mutate(newContext, actualContext, path); });
+              if ('function' === typeof context) {
+                  return context(mutate, actualContext, rootContext);
+              }
+              else if (context instanceof Promise) {
+                  return context.then(function (newContext) { return mutate(newContext, actualContext, path); });
               }
               else if ('object' === typeof context) {
                   if (null == path && 'string' === typeof actualContext) {
