@@ -1,6 +1,6 @@
 {
   "name": "xatto",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "JavaScript framework for building web applications like Hyperapp.",
   "main": "dist/xatto.min.js",
   "typings": "dist/src/index.d.ts",
