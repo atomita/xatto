@@ -7,7 +7,7 @@
   "author": "atomita",
   "license": "MIT",
   "scripts": {
-    "test": "jest",
+    "test": "jest --coverage --no-cache",
     "build": "npm run bundle:clean && npm run minify",
     "bundle": "rollup --config",
     "bundle:clean": "rm -rf ./dist && npm run bundle",
