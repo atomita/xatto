@@ -31,10 +31,12 @@ export function atto(
   deepSet(attributes, CONTEXT, rootContext)
   attributes[XA_CONTEXT] = rootContext // todo to be deprecated
 
-  function mutate(context: any, actualContext = rootContext, path: string | null = null) {
+  function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
     if (context && context !== actualContext) {
-      if (context instanceof Promise) {
-        context.then(newContext => mutate(newContext, actualContext, path))
+      if ('function' === typeof context) {
+        return context(mutate, actualContext, rootContext)
+      } else if (context instanceof Promise) {
+        return context.then(newContext => mutate(newContext, actualContext, path))
       } else if ('object' === typeof context) {
         if (null == path && 'string' === typeof actualContext) {
           path = actualContext
