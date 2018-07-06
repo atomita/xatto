@@ -15,7 +15,7 @@ export function resolveNode(node, parentNode) {
         || deepGet(parentNode, `${ATTRIBUTES}.${XA_CONTEXT}`)))
       || {} // todo mixed to be deprecated
 
-    let slice = deepGet(attributes, SLICE) || attributes[XA_SLICE]
+    let slice = deepGet(attributes, SLICE) || attributes[XA_SLICE] // todo mixed to be deprecated
     let sliced: any
 
     if ('object' !== typeof slice) {
@@ -42,6 +42,7 @@ export function resolveNode(node, parentNode) {
 
     deepSet(attributes, CONTEXT, context)
     deepSet(attributes, EXTRA, extra)
+    deepSet(attributes, SLICE, [])
     attributes[XA_CONTEXT] = context // todo to be deprecated
     attributes[XA_EXTRA] = extra // todo to be deprecated
   }
