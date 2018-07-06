@@ -8,5 +8,14 @@ export default {
     name: 'xatto',
     sourceMap: true,
   },
-  plugins: [typescript()],
+  plugins: [typescript({
+    exclude: [
+      '*.d.ts',
+      '**/*.d.ts',
+      '*.test.ts',
+      '**/*.test.ts',
+      '*.test.tsx',
+      '**/*.test.tsx'
+    ]
+  })]
 }
