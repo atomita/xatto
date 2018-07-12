@@ -1,6 +1,6 @@
 {
   "name": "xatto",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "JavaScript framework for building web applications like Hyperapp.",
   "main": "dist/xatto.min.js",
   "ts:main": "src/index.ts",
@@ -14,7 +14,6 @@
     "bundle": "rollup --config",
     "bundle:clean": "rm -rf ./dist && npm run bundle",
     "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=dist/xatto.min.js.map",
-    "prepare": "npm run build",
     "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
   },
   "husky": {
