@@ -1,8 +1,9 @@
 {
   "name": "xatto",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "JavaScript framework for building web applications like Hyperapp.",
   "main": "dist/xatto.min.js",
+  "ts:main": "src/index.ts",
   "typings": "dist/src/index.d.ts",
   "repository": "git@github.com:atomita/xatto.git",
   "author": "atomita",
