@@ -1,7 +1,8 @@
 {
   "name": "xatto",
   "version": "0.1.13",
-  "description": "JavaScript framework for building web applications like Hyperapp.",
+  "description": "xatto is View Layer Library based on Function and Context using VirtualDOM. This is developed by forking from jorgebucaran/superfine.",
+  "keywords": [ "web", "function", "context", "virtual-dom", "vdom", "jsx", "view", "frontend", "ultradom", "superfine", "hyperapp" ],
   "main": "dist/xatto.min.js",
   "ts:main": "src/index.ts",
   "typings": "dist/src/index.d.ts",
