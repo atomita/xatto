@@ -260,7 +260,8 @@
   };
 
   function isVNode(value) {
-      return 'object' === typeof value
+      return null != value
+          && 'object' === typeof value
           && ATTRIBUTES in value
           && CHILDREN in value
           && KEY in value

@@ -1,6 +1,6 @@
 {
   "name": "xatto",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "xatto is View Layer Library based on Function and Context using VirtualDOM. This is developed by forking from jorgebucaran/superfine.",
   "keywords": [ "web", "function", "context", "virtual-dom", "vdom", "jsx", "view", "frontend", "ultradom", "superfine", "hyperapp" ],
   "main": "dist/xatto.min.js",
