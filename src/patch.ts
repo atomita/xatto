@@ -6,7 +6,6 @@ import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
 import { deepGet } from './deepGet'
-import { getKey } from './getKey'
 import { updateElement } from './updateElement'
 
 export function patch(patchStack: Function) {
