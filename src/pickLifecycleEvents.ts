@@ -8,12 +8,12 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
   return (stack: Function) => (
     glueNode,
     isSVG,
-    eventListener,
+    eventProxy,
     isDestroy = false
   ) => {
     const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
-    glueNode = stack(glueNode, isSVG, eventListener, isDestroy)
+    glueNode = stack(glueNode, isSVG, eventProxy, isDestroy)
 
     let lifecycleEvent: Function | undefined
 

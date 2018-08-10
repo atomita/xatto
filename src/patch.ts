@@ -13,7 +13,7 @@ export function patch(patchStack: Function) {
   return (
     glueNode,
     isSVG,
-    eventListener,
+    eventProxy,
     isDestroy
   ): any | null => {
     let patched: any | null = null
@@ -29,7 +29,7 @@ export function patch(patchStack: Function) {
     }
 
     const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-      const patchedChild = patchStack(childNode, isSVG, eventListener, isDestroy)
+      const patchedChild = patchStack(childNode, isSVG, eventProxy, isDestroy)
       return patchedChild ? acc.concat(patchedChild) : acc
     }, [])
 
@@ -37,10 +37,10 @@ export function patch(patchStack: Function) {
 
     switch (lifecycle) {
       case CREATE:
-        element = createElement(glueNode, isSVG, eventListener)
+        element = createElement(glueNode, isSVG, eventProxy)
         break
       case UPDATE:
-        element = updateElement(glueNode, isSVG, eventListener)
+        element = updateElement(glueNode, isSVG, eventProxy)
         break
       case DESTROY:
         if (glueNode[LIFECYCLE] === DESTROY) {

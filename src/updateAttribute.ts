@@ -1,4 +1,5 @@
 import { ElementExtends } from './ElementExtends'
+import { XLINK_NS } from './consts/namespaces'
 
 export function updateAttribute(
   element: Element & ElementExtends,
@@ -6,7 +7,7 @@ export function updateAttribute(
   value,
   oldValue,
   isSVG: Boolean,
-  eventListener
+  eventProxy
 ) {
   if (name === "key" || 'object' === typeof value) {
     // noop
@@ -17,21 +18,49 @@ export function updateAttribute(
       }
       element.events[(name = name.slice(2))] = value
 
-      if (value) {
-        if (!oldValue) {
-          element.addEventListener(name, eventListener)
+      if (value == null) {
+        element.removeEventListener(name, eventProxy)
+      } else if (oldValue == null) {
+        element.addEventListener(name, eventProxy)
+      }
+    } else {
+      const nullOrFalse = value == null || value === false
+
+      if (
+        name in element &&
+        name !== "list" &&
+        name !== "draggable" &&
+        name !== "spellcheck" &&
+        name !== "translate" &&
+        !isSVG
+      ) {
+        if (nullOrFalse) {
+          element.removeAttribute(name)
+        } else {
+          element[name] = value == null ? "" : value
         }
       } else {
-        element.removeEventListener(name, eventListener)
-      }
-    } else if (name in element && name !== "list" && !isSVG) {
-      element[name] = value == null ? "" : value
-    } else if (value != null && value !== false) {
-      element.setAttribute(name, value)
-    }
+        let ns = false
+        if (isSVG) {
+          const originName = name
+          name = name.replace(/^xlink:?/, "")
+          ns = name !== originName
+        }
 
-    if (value == null || value === false) {
-      element.removeAttribute(name)
+        switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
+          case 0:
+            element.setAttribute(name, value)
+            break
+          case 1:
+            element.removeAttribute(name)
+            break
+          case 2:
+            element.setAttributeNS(XLINK_NS, name, value)
+            break
+          case 3:
+            element.removeAttributeNS(XLINK_NS, name)
+        }
+      }
     }
   }
 }

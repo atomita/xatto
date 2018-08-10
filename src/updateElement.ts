@@ -9,7 +9,7 @@ import { updateAttribute } from './updateAttribute'
 export function updateElement(
   node: any,
   isSVG: Boolean,
-  eventListener
+  eventProxy
 ): Element & ElementExtends | Node {
   const element = node[ELEMENT]
   const attributes = node[ATTRIBUTES]
@@ -34,7 +34,7 @@ export function updateElement(
         attributes[name],
         prevAttributes[name],
         isSVG,
-        eventListener
+        eventProxy
       )
     }
   }

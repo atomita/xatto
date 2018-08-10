@@ -54,7 +54,7 @@ export function atto(
     scheduleRender()
   }
 
-  function eventListener(event: Event) {
+  function eventProxy(event: Event) {
     const element = event.currentTarget as Element & ElementExtends
 
     element.context = element.context || {}
@@ -82,7 +82,7 @@ export function atto(
     glueNode = patchStack(
       node,
       'svg' === node.name,
-      eventListener,
+      eventProxy,
       false
     )
 

@@ -10,7 +10,7 @@ import { updateAttribute } from './updateAttribute'
 export function createElement(
   node: any,
   isSVG: Boolean,
-  eventListener
+  eventProxy
 ): Element & ElementExtends | Node {
   const attributes = node[ATTRIBUTES] || {}
 
@@ -23,7 +23,7 @@ export function createElement(
     : document.createElement(node[NAME])
 
   for (const name in attributes) {
-    updateAttribute(element, name, attributes[name], null, isSVG, eventListener)
+    updateAttribute(element, name, attributes[name], null, isSVG, eventProxy)
   }
 
   element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {} // todo mixed to be deprecated
