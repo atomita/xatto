@@ -88,7 +88,9 @@
 
   var TEXT_NODE = 'xa-txt';
 
-  function updateAttribute(element, name, value, oldValue, isSVG, eventListener) {
+  var XLINK_NS = "http://www.w3.org/1999/xlink";
+
+  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
       if (name === "key" || 'object' === typeof value) {
           // noop
       }
@@ -98,28 +100,54 @@
                   element.events = {};
               }
               element.events[(name = name.slice(2))] = value;
-              if (value) {
-                  if (!oldValue) {
-                      element.addEventListener(name, eventListener);
+              if (value == null) {
+                  element.removeEventListener(name, eventProxy);
+              }
+              else if (oldValue == null) {
+                  element.addEventListener(name, eventProxy);
+              }
+          }
+          else {
+              var nullOrFalse = value == null || value === false;
+              if (name in element &&
+                  name !== "list" &&
+                  name !== "draggable" &&
+                  name !== "spellcheck" &&
+                  name !== "translate" &&
+                  !isSVG) {
+                  if (nullOrFalse) {
+                      element.removeAttribute(name);
+                  }
+                  else {
+                      element[name] = value == null ? "" : value;
                   }
               }
               else {
-                  element.removeEventListener(name, eventListener);
+                  var ns = false;
+                  if (isSVG) {
+                      var originName = name;
+                      name = name.replace(/^xlink:?/, "");
+                      ns = name !== originName;
+                  }
+                  switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
+                      case 0:
+                          element.setAttribute(name, value);
+                          break;
+                      case 1:
+                          element.removeAttribute(name);
+                          break;
+                      case 2:
+                          element.setAttributeNS(XLINK_NS, name, value);
+                          break;
+                      case 3:
+                          element.removeAttributeNS(XLINK_NS, name);
+                  }
               }
-          }
-          else if (name in element && name !== "list" && !isSVG) {
-              element[name] = value == null ? "" : value;
-          }
-          else if (value != null && value !== false) {
-              element.setAttribute(name, value);
-          }
-          if (value == null || value === false) {
-              element.removeAttribute(name);
           }
       }
   }
 
-  function createElement(node, isSVG, eventListener) {
+  function createElement(node, isSVG, eventProxy) {
       var attributes = node[ATTRIBUTES] || {};
       if (node[NAME] === TEXT_NODE) {
           return document.createTextNode(deepGet(attributes, TEXT));
@@ -128,14 +156,14 @@
           ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
           : document.createElement(node[NAME]);
       for (var name_1 in attributes) {
-          updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventListener);
+          updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventProxy);
       }
       element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {}; // todo mixed to be deprecated
       element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] || {}; // todo mixed to be deprecated
       return element;
   }
 
-  function updateElement(node, isSVG, eventListener) {
+  function updateElement(node, isSVG, eventProxy) {
       var element = node[ELEMENT];
       var attributes = node[ATTRIBUTES];
       if (node[NAME] === TEXT_NODE) {
@@ -148,7 +176,7 @@
               (name_1 === "value" || name_1 === "checked"
                   ? element[name_1]
                   : prevAttributes[name_1])) {
-              updateAttribute(element, name_1, attributes[name_1], prevAttributes[name_1], isSVG, eventListener);
+              updateAttribute(element, name_1, attributes[name_1], prevAttributes[name_1], isSVG, eventProxy);
           }
       }
       element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
@@ -157,7 +185,7 @@
   }
 
   function patch(patchStack) {
-      return function (glueNode, isSVG, eventListener, isDestroy) {
+      return function (glueNode, isSVG, eventProxy, isDestroy) {
           var element;
           if (!isSVG && glueNode[NAME] === 'svg') {
               isSVG = true;
@@ -166,16 +194,16 @@
               isDestroy = true;
           }
           var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
-              var patchedChild = patchStack(childNode, isSVG, eventListener, isDestroy);
+              var patchedChild = patchStack(childNode, isSVG, eventProxy, isDestroy);
               return patchedChild ? acc.concat(patchedChild) : acc;
           }, []);
           var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
           switch (lifecycle) {
               case CREATE:
-                  element = createElement(glueNode, isSVG, eventListener);
+                  element = createElement(glueNode, isSVG, eventProxy);
                   break;
               case UPDATE:
-                  element = updateElement(glueNode, isSVG, eventListener);
+                  element = updateElement(glueNode, isSVG, eventProxy);
                   break;
               case DESTROY:
                   if (glueNode[LIFECYCLE] === DESTROY) {
@@ -201,10 +229,10 @@
   var lifeCycleEventPath = function (name) { return ATTRIBUTES + ".on" + name; };
 
   function pickLifecycleEvents(lifecycleEvents, mutate) {
-      return function (stack) { return function (glueNode, isSVG, eventListener, isDestroy) {
+      return function (stack) { return function (glueNode, isSVG, eventProxy, isDestroy) {
           if (isDestroy === void 0) { isDestroy = false; }
           var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
-          glueNode = stack(glueNode, isSVG, eventListener, isDestroy);
+          glueNode = stack(glueNode, isSVG, eventProxy, isDestroy);
           var lifecycleEvent;
           switch (lifecycle) {
               case CREATE:
@@ -455,7 +483,7 @@
           }
           scheduleRender();
       }
-      function eventListener(event) {
+      function eventProxy(event) {
           var element = event.currentTarget;
           element.context = element.context || {};
           element.extra = element.extra || {};
@@ -474,7 +502,7 @@
               }
               return patchStack.apply(null, args);
           }));
-          glueNode = patchStack(node, 'svg' === node.name, eventListener, false);
+          glueNode = patchStack(node, 'svg' === node.name, eventProxy, false);
           lifecycleEvents.reduce(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
       }
       function rendered() {
