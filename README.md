@@ -2,7 +2,7 @@
 xatto is View Layer Library based on Function and Context using VirtualDOM.  
 This is developed by forking from [jorgebucaran/superfine](https://github.com/jorgebucaran/superfine).
 
-## Getting Started
+## Get Started
 
 xatto is available as a package on [npm](https://www.npmjs.com/). 
 
@@ -23,6 +23,15 @@ It is also available on a [CDN](https://unpkg.com).
   var atto = window.xatto.atto;
   // ...
 </script>
+```
+
+### Easier
+
+```sh
+git clone https://github.com/atomita/xatto-starter-kit.git project
+cd project
+npm install
+npm run serve
 ```
 
 ## Examples
