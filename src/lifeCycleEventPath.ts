@@ -1,3 +1,3 @@
-import { ATTRIBUTES } from './consts/vNodeAttributeNames'
+import { PROPS } from './consts/vNodeAttributeNames'
 
-export const lifeCycleEventPath = (name) => `${ATTRIBUTES}.on${name}`
+export const lifeCycleEventPath = (name) => `${PROPS}.on${name}`

@@ -1,6 +1,6 @@
 export interface VNode {
     name: any;
-    attributes: any;
+    props: any;
     children: VNode[];
     key: any;
 }

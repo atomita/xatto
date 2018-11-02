@@ -1,6 +1,6 @@
-import { ATTRIBUTES, CHILDREN, KEY, NAME } from './consts/vNodeAttributeNames'
+import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
-import { ELEMENT, LIFECYCLE, PREV_ATTRIBUTES } from './consts/glueNodeAttributeNames'
+import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { lifeCycleEventPath } from './lifeCycleEventPath'
@@ -12,12 +12,12 @@ export function mergeGlueNode(vNode?, glueNode?) {
     newGlueNode = { ...vNode }
     newGlueNode[LIFECYCLE] = CREATE
     newGlueNode[CHILDREN] = vNode[CHILDREN].map(child => mergeGlueNode(child, null))
-    deepSet(newGlueNode, PREV_ATTRIBUTES, {})
+    deepSet(newGlueNode, PREV_PROPS, {})
     return newGlueNode
   }
 
   if (!vNode) {
-    deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES])
+    deepSet(glueNode, PREV_PROPS, glueNode[PROPS])
     glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
       ? glueNode[LIFECYCLE]
       : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
@@ -26,9 +26,9 @@ export function mergeGlueNode(vNode?, glueNode?) {
     return glueNode
   }
 
-  deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES])
+  deepSet(glueNode, PREV_PROPS, glueNode[PROPS])
 
-  glueNode[ATTRIBUTES] = vNode[ATTRIBUTES]
+  glueNode[PROPS] = vNode[PROPS]
   glueNode[KEY] = vNode[KEY]
   glueNode[NAME] = vNode[NAME]
 

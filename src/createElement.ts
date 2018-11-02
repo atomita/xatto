@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN, NAME } from './consts/vNodeAttributeNames'
+import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { TEXT_NODE } from './consts/tagNames'
@@ -12,22 +12,22 @@ export function createElement(
   isSVG: Boolean,
   eventProxy
 ): Element & ElementExtends | Node {
-  const attributes = node[ATTRIBUTES] || {}
+  const props = node[PROPS] || {}
 
   if (node[NAME] === TEXT_NODE) {
-    return document.createTextNode(deepGet(attributes, TEXT) as string)
+    return document.createTextNode(deepGet(props, TEXT) as string)
   }
 
   const element = (isSVG = isSVG || node[NAME] === "svg")
     ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
     : document.createElement(node[NAME])
 
-  for (const name in attributes) {
-    updateAttribute(element, name, attributes[name], null, isSVG, eventProxy)
+  for (const name in props) {
+    updateAttribute(element, name, props[name], null, isSVG, eventProxy)
   }
 
-  element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {} // todo mixed to be deprecated
-  element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] || {} // todo mixed to be deprecated
+  element.context = deepGet(props, CONTEXT) || props[CONTEXT] || {} // todo mixed to be deprecated
+  element.extra = deepGet(props, EXTRA) || props[EXTRA] || {} // todo mixed to be deprecated
 
   return element
 }
