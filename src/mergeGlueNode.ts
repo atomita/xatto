@@ -1,19 +1,20 @@
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
+import { GlueNode } from './GlueNode';
+import { ResolvedVNode } from './ResolvedVNode';
+import { createGlueNode } from './createGlueNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { lifeCycleEventPath } from './lifeCycleEventPath'
 
-export function mergeGlueNode(vNode?, glueNode?) {
-  let newGlueNode
+export function mergeGlueNode(
+  vNode?: ResolvedVNode,
+  glueNode?: GlueNode
+): GlueNode {
 
   if (!glueNode) {
-    newGlueNode = { ...vNode }
-    newGlueNode[LIFECYCLE] = CREATE
-    newGlueNode[CHILDREN] = vNode[CHILDREN].map(child => mergeGlueNode(child, null))
-    deepSet(newGlueNode, PREV_PROPS, {})
-    return newGlueNode
+    return createGlueNode(vNode!)
   }
 
   if (!vNode) {
@@ -51,12 +52,12 @@ export function mergeGlueNode(vNode?, glueNode?) {
       indexedPrevChildren.splice(i, 1)
       return mergeGlueNode(child, prevChild)
     } else {
-      return mergeGlueNode(child, null)
+      return mergeGlueNode(child)
     }
   })
 
   indexedPrevChildren.reduceRight((_, child) => {
-    child = mergeGlueNode(null, child)
+    child = mergeGlueNode(undefined, child)
     if (0 === child.i) {
       children.unshift(child)
     } else {
@@ -65,11 +66,12 @@ export function mergeGlueNode(vNode?, glueNode?) {
       for (i = 0; i < children.length; i++) {
         if (index === children[i].i) {
           children.splice(i + 1, 0, child)
-          return
+          return 0
         }
       }
       children.push(child)
     }
+    return 0
   }, 0)
 
   glueNode[CHILDREN] = children

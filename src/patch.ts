@@ -1,7 +1,7 @@
 import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV } from './consts/glueNodeAttributeNames'
-import { ElementExtends } from './ElementExtends'
+import { Props } from './Props'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
@@ -12,7 +12,8 @@ export function patch(patchStack: Function) {
   return (
     glueNode,
     isSVG,
-    eventProxy,
+    eventProxy: (e: Event) => void,
+    elementProps: WeakMap<Element, Props>,
     isDestroy
   ): any | null => {
     let patched: any | null = null
@@ -28,7 +29,7 @@ export function patch(patchStack: Function) {
     }
 
     const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-      const patchedChild = patchStack(childNode, isSVG, eventProxy, isDestroy)
+      const patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy)
       return patchedChild ? acc.concat(patchedChild) : acc
     }, [])
 
@@ -36,10 +37,10 @@ export function patch(patchStack: Function) {
 
     switch (lifecycle) {
       case CREATE:
-        element = createElement(glueNode, isSVG, eventProxy)
+        element = createElement(glueNode, isSVG, eventProxy, elementProps)
         break
       case UPDATE:
-        element = updateElement(glueNode, isSVG, eventProxy)
+        element = updateElement(glueNode, isSVG, eventProxy, elementProps)
         break
       case DESTROY:
         if (glueNode[LIFECYCLE] === DESTROY) {

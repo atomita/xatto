@@ -1,6 +1,7 @@
 import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
-import { ElementExtends } from './ElementExtends'
+import { GlueNode } from './GlueNode'
+import { Props } from './Props'
 import { TEXT_NODE } from './consts/tagNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
@@ -8,10 +9,11 @@ import { resolveNode } from './resolveNode'
 import { updateAttribute } from './updateAttribute'
 
 export function createElement(
-  node: any,
+  node: GlueNode,
   isSVG: Boolean,
-  eventProxy
-): Element & ElementExtends | Node {
+  eventProxy: (e: Event) => void,
+  elementProps: WeakMap<Element, Props>
+): Element | Node {
   const props = node[PROPS] || {}
 
   if (node[NAME] === TEXT_NODE) {
@@ -23,11 +25,10 @@ export function createElement(
     : document.createElement(node[NAME])
 
   for (const name in props) {
-    updateAttribute(element, name, props[name], null, isSVG, eventProxy)
+    updateAttribute(element, name, props[name], null, isSVG, eventProxy, elementProps)
   }
 
-  element.context = deepGet(props, CONTEXT) || {}
-  element.extra = deepGet(props, EXTRA) || {}
+  elementProps.set(element, props)
 
   return element
 }

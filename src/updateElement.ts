@@ -1,22 +1,24 @@
 import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
 import { ELEMENT, PREV_PROPS } from './consts/glueNodeAttributeNames'
-import { ElementExtends } from './ElementExtends'
+import { Props } from './Props'
 import { TEXT_NODE } from './consts/tagNames'
+import { GlueNode } from './GlueNode'
 import { deepGet } from './deepGet'
 import { updateAttribute } from './updateAttribute'
 
 export function updateElement(
-  node: any,
+  node: GlueNode,
   isSVG: Boolean,
-  eventProxy
-): Element & ElementExtends | Node {
+  eventProxy: (e: Event) => void,
+  elementProps: WeakMap<Element, Props>
+): Element | Node {
   const element = node[ELEMENT]
   const props = node[PROPS]
 
   if (node[NAME] === TEXT_NODE) {
-    element.nodeValue = deepGet(props, TEXT) as string
-    return element
+    element!.nodeValue = deepGet(props, TEXT) as string
+    return element!
   }
 
   const prevAttributes = deepGet(node, PREV_PROPS) || {}
@@ -25,19 +27,22 @@ export function updateElement(
     if (
       props[name] !==
       (name === "value" || name === "checked"
-        ? element[name]
+        ? element![name]
         : prevAttributes[name])
     ) {
       updateAttribute(
-        element,
+        element!,
         name,
         props[name],
         prevAttributes[name],
         isSVG,
-        eventProxy
+        eventProxy,
+        elementProps
       )
     }
   }
 
-  return element
+  elementProps.set(element!, props)
+
+  return element!
 }

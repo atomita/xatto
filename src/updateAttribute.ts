@@ -1,27 +1,24 @@
-import { ElementExtends } from './ElementExtends'
+import { Props } from './Props'
 import { XLINK_NS } from './consts/namespaces'
 
 export function updateAttribute(
-  element: Element & ElementExtends,
+  element: Element,
   name,
   value,
   oldValue,
   isSVG: Boolean,
-  eventProxy
+  eventProxy: (e: Event) => void,
+  elementProps: WeakMap<Element, Props>
 ) {
   if (name === "key" || 'object' === typeof value) {
     // noop
   } else {
     if (name[0] === "o" && name[1] === "n") {
-      if (!element.events) {
-        element.events = {}
-      }
-      element.events[(name = name.slice(2))] = value
-
+      const eventName = name.slice(2)
       if (value == null) {
-        element.removeEventListener(name, eventProxy)
+        element.removeEventListener(eventName, eventProxy)
       } else if (oldValue == null) {
-        element.addEventListener(name, eventProxy)
+        element.addEventListener(eventName, eventProxy)
       }
     } else {
       const nullOrFalse = value == null || value === false

@@ -1,1 +1,3 @@
-export declare function resolveNode(node: any, parentNode: any): any;
+import { ResolvedVNode } from './ResolvedVNode';
+import { VNode } from './VNode';
+export declare function resolveNode(node: VNode, parentNode?: VNode | ResolvedVNode): ResolvedVNode | undefined;

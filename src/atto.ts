@@ -1,34 +1,34 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
-import { CONTEXT } from './consts/attributeNames'
-import { ElementExtends } from './ElementExtends'
+import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
+import { GlueNode } from './GlueNode'
+import { Props } from './Props'
+import { VNode } from './VNode'
+import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
+import { mergeGlueNode } from './mergeGlueNode'
 import { patch } from './patch'
 import { pickLifecycleEvents } from './pickLifecycleEvents'
+import { remodelProps } from './remodelProps';
 import { resolveNode } from './resolveNode'
-import { mergeGlueNode } from './mergeGlueNode'
 import { x } from './x'
 
 export function atto(
-  view: (props: any, children: any[]) => any,
-  elementOrGlueNode: Element & ElementExtends | any
+  view: (props: Props, children: VNode[]) => VNode,
+  elementOrGlueNode: Element | GlueNode
 ) {
 
   let scheduled = false
 
   let glueNode = elementOrGlueNode instanceof Element
-    ? {
-      name: elementOrGlueNode.nodeName,
-      props: {},
-      children: [],
-      element: elementOrGlueNode
-    }
-    : elementOrGlueNode
+    ? createGlueNodeByElement(elementOrGlueNode)
+    : elementOrGlueNode as GlueNode
 
-  const props = glueNode[PROPS]
+  const rootProps = remodelProps(glueNode[PROPS])
 
-  const rootContext: any = deepGet(props, CONTEXT) || {}
-  deepSet(props, CONTEXT, rootContext)
+  const rootContext: any = deepGet(rootProps, CONTEXT)
+
+  const elementProps = new WeakMap<Element, Props>()
 
   function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
     if (context && context !== actualContext) {
@@ -54,21 +54,22 @@ export function atto(
   }
 
   function eventProxy(event: Event) {
-    const element = event.currentTarget as Element & ElementExtends
+    const element = event.currentTarget as Element
 
-    element.context = element.context || {}
-    element.extra = element.extra || {}
+    const props = elementProps.get(element)
+    const context = deepGet(props, CONTEXT)
+    const extra = deepGet(props, EXTRA)
 
-    const context = element.events[event.type](event, element.context, element.extra)
+    const newContext = props!["on" + event.type](event, context, extra)
 
-    mutate(context, element.context)
+    mutate(newContext, context)
   }
 
   function render() {
     const lifecycleEvents: Function[] = []
 
     const node = mergeGlueNode(
-      resolveNode(x(view, props, glueNode && glueNode[CHILDREN]), x('div', {}, [])),
+      resolveNode(x(view, rootProps, glueNode[CHILDREN])) || resolveNode(x('div', {}, [])),
       glueNode
     )
 
@@ -82,6 +83,7 @@ export function atto(
       node,
       'svg' === node.name,
       eventProxy,
+      elementProps,
       false
     )
 
@@ -106,4 +108,3 @@ export function atto(
 
   return mutate
 }
-

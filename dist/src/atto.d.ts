@@ -1,2 +1,4 @@
-import { ElementExtends } from './ElementExtends';
-export declare function atto(view: (props: any, children: any[]) => any, elementOrGlueNode: Element & ElementExtends | any): (context?: any, actualContext?: any, path?: string | null) => any;
+import { GlueNode } from './GlueNode';
+import { Props } from './Props';
+import { VNode } from './VNode';
+export declare function atto(view: (props: Props, children: VNode[]) => VNode, elementOrGlueNode: Element | GlueNode): (context?: any, actualContext?: any, path?: string | null) => any;
