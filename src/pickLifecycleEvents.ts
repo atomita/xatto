@@ -1,6 +1,6 @@
 import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
-import { ATTRIBUTES } from './consts/vNodeAttributeNames'
-import { ELEMENT, LIFECYCLE, PREV_ATTRIBUTES } from './consts/glueNodeAttributeNames'
+import { PROPS } from './consts/vNodeAttributeNames'
+import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { lifeCycleEventPath } from './lifeCycleEventPath'
 
@@ -41,7 +41,7 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
 
     if (lifecycleEvent) {
       lifecycleEvents.push(() => {
-        lifecycleEvent!(glueNode[ELEMENT], glueNode[ATTRIBUTES], deepGet(glueNode, PREV_ATTRIBUTES))
+        lifecycleEvent!(glueNode[ELEMENT], glueNode[PROPS], deepGet(glueNode, PREV_PROPS))
       })
     }
 

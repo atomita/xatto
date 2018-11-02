@@ -1,4 +1,4 @@
-import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames';
+import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
 import { CONTEXT, XA_CONTEXT } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { deepGet } from './deepGet'
@@ -10,7 +10,7 @@ import { mergeGlueNode } from './mergeGlueNode'
 import { x } from './x'
 
 export function atto(
-  view: (attributes: any, children: any[]) => any,
+  view: (props: any, children: any[]) => any,
   elementOrGlueNode: Element & ElementExtends | any
 ) {
 
@@ -19,17 +19,17 @@ export function atto(
   let glueNode = elementOrGlueNode instanceof Element
     ? {
       name: elementOrGlueNode.nodeName,
-      attributes: {},
+      props: {},
       children: [],
       element: elementOrGlueNode
     }
     : elementOrGlueNode
 
-  const attributes = glueNode[ATTRIBUTES]
+  const props = glueNode[PROPS]
 
-  const rootContext: any = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {} // todo mixed to be deprecated
-  deepSet(attributes, CONTEXT, rootContext)
-  attributes[XA_CONTEXT] = rootContext // todo to be deprecated
+  const rootContext: any = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {} // todo mixed to be deprecated
+  deepSet(props, CONTEXT, rootContext)
+  props[XA_CONTEXT] = rootContext // todo to be deprecated
 
   function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
     if (context && context !== actualContext) {
@@ -69,7 +69,7 @@ export function atto(
     const lifecycleEvents: Function[] = []
 
     const node = mergeGlueNode(
-      resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])),
+      resolveNode(x(view, props, glueNode && glueNode[CHILDREN]), x('div', {}, [])),
       glueNode
     )
 

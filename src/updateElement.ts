@@ -1,6 +1,6 @@
-import { ATTRIBUTES, NAME } from './consts/vNodeAttributeNames'
+import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
-import { ELEMENT, PREV_ATTRIBUTES } from './consts/glueNodeAttributeNames'
+import { ELEMENT, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { ElementExtends } from './ElementExtends'
 import { TEXT_NODE } from './consts/tagNames'
 import { deepGet } from './deepGet'
@@ -12,18 +12,18 @@ export function updateElement(
   eventProxy
 ): Element & ElementExtends | Node {
   const element = node[ELEMENT]
-  const attributes = node[ATTRIBUTES]
+  const props = node[PROPS]
 
   if (node[NAME] === TEXT_NODE) {
-    element.nodeValue = deepGet(attributes, TEXT) as string
+    element.nodeValue = deepGet(props, TEXT) as string
     return element
   }
 
-  const prevAttributes = deepGet(node, PREV_ATTRIBUTES) || {}
+  const prevAttributes = deepGet(node, PREV_PROPS) || {}
 
-  for (const name in attributes) {
+  for (const name in props) {
     if (
-      attributes[name] !==
+      props[name] !==
       (name === "value" || name === "checked"
         ? element[name]
         : prevAttributes[name])
@@ -31,7 +31,7 @@ export function updateElement(
       updateAttribute(
         element,
         name,
-        attributes[name],
+        props[name],
         prevAttributes[name],
         isSVG,
         eventProxy
@@ -39,8 +39,8 @@ export function updateElement(
     }
   }
 
-  element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {} // todo mixed to be deprecated
-  element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {} // todo mixed to be deprecated
+  element.context = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {} // todo mixed to be deprecated
+  element.extra = deepGet(props, EXTRA) || props[XA_EXTRA] || {} // todo mixed to be deprecated
 
   return element
 }

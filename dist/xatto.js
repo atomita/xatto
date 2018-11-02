@@ -4,10 +4,10 @@
   (factory((global.xatto = {})));
 }(this, (function (exports) { 'use strict';
 
-  var ATTRIBUTES = 'attributes';
   var CHILDREN = 'children';
   var KEY = 'key';
   var NAME = 'name';
+  var PROPS = 'props';
 
   var CONTEXT = 'xa.context';
   var EXTRA = 'xa.extra';
@@ -84,7 +84,7 @@
   var ELEMENT = 'element';
   var LIFECYCLE = 'lifecycle';
   var PREV = 'prev';
-  var PREV_ATTRIBUTES = PREV + "." + ATTRIBUTES;
+  var PREV_PROPS = PREV + "." + PROPS;
 
   var TEXT_NODE = 'xa-txt';
 
@@ -148,39 +148,39 @@
   }
 
   function createElement(node, isSVG, eventProxy) {
-      var attributes = node[ATTRIBUTES] || {};
+      var props = node[PROPS] || {};
       if (node[NAME] === TEXT_NODE) {
-          return document.createTextNode(deepGet(attributes, TEXT));
+          return document.createTextNode(deepGet(props, TEXT));
       }
       var element = (isSVG = isSVG || node[NAME] === "svg")
           ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
           : document.createElement(node[NAME]);
-      for (var name_1 in attributes) {
-          updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventProxy);
+      for (var name_1 in props) {
+          updateAttribute(element, name_1, props[name_1], null, isSVG, eventProxy);
       }
-      element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] || {}; // todo mixed to be deprecated
+      element.context = deepGet(props, CONTEXT) || props[CONTEXT] || {}; // todo mixed to be deprecated
+      element.extra = deepGet(props, EXTRA) || props[EXTRA] || {}; // todo mixed to be deprecated
       return element;
   }
 
   function updateElement(node, isSVG, eventProxy) {
       var element = node[ELEMENT];
-      var attributes = node[ATTRIBUTES];
+      var props = node[PROPS];
       if (node[NAME] === TEXT_NODE) {
-          element.nodeValue = deepGet(attributes, TEXT);
+          element.nodeValue = deepGet(props, TEXT);
           return element;
       }
-      var prevAttributes = deepGet(node, PREV_ATTRIBUTES) || {};
-      for (var name_1 in attributes) {
-          if (attributes[name_1] !==
+      var prevAttributes = deepGet(node, PREV_PROPS) || {};
+      for (var name_1 in props) {
+          if (props[name_1] !==
               (name_1 === "value" || name_1 === "checked"
                   ? element[name_1]
                   : prevAttributes[name_1])) {
-              updateAttribute(element, name_1, attributes[name_1], prevAttributes[name_1], isSVG, eventProxy);
+              updateAttribute(element, name_1, props[name_1], prevAttributes[name_1], isSVG, eventProxy);
           }
       }
-      element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}; // todo mixed to be deprecated
+      element.context = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {}; // todo mixed to be deprecated
+      element.extra = deepGet(props, EXTRA) || props[XA_EXTRA] || {}; // todo mixed to be deprecated
       return element;
   }
 
@@ -226,7 +226,7 @@
       };
   }
 
-  var lifeCycleEventPath = function (name) { return ATTRIBUTES + ".on" + name; };
+  var lifeCycleEventPath = function (name) { return PROPS + ".on" + name; };
 
   function pickLifecycleEvents(lifecycleEvents, mutate) {
       return function (stack) { return function (glueNode, isSVG, eventProxy, isDestroy) {
@@ -257,7 +257,7 @@
           }
           if (lifecycleEvent) {
               lifecycleEvents.push(function () {
-                  lifecycleEvent(glueNode[ELEMENT], glueNode[ATTRIBUTES], deepGet(glueNode, PREV_ATTRIBUTES));
+                  lifecycleEvent(glueNode[ELEMENT], glueNode[PROPS], deepGet(glueNode, PREV_PROPS));
               });
           }
           return glueNode;
@@ -290,7 +290,7 @@
   function isVNode(value) {
       return null != value
           && 'object' === typeof value
-          && ATTRIBUTES in value
+          && PROPS in value
           && CHILDREN in value
           && KEY in value
           && NAME in value
@@ -298,14 +298,14 @@
   }
 
   function resolveNode(node, parentNode) {
-      var attributes = node && node[ATTRIBUTES];
-      if (attributes) {
-          var context = deepGet(attributes, CONTEXT)
-              || attributes[XA_CONTEXT]
-              || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
-                  || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
+      var props = node && node[PROPS];
+      if (props) {
+          var context = deepGet(props, CONTEXT)
+              || props[XA_CONTEXT]
+              || (parentNode && (deepGet(parentNode, PROPS + "." + CONTEXT)
+                  || deepGet(parentNode, PROPS + "." + XA_CONTEXT)))
               || {}; // todo mixed to be deprecated
-          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE]; // todo mixed to be deprecated
+          var slice = deepGet(props, SLICE) || props[XA_SLICE]; // todo mixed to be deprecated
           var sliced = void 0;
           if ('object' !== typeof slice) {
               slice = [slice];
@@ -320,16 +320,16 @@
               }
               context = sliced;
           }
-          var extra = __assign({}, (deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + EXTRA)
-              || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
-          deepSet(attributes, CONTEXT, context);
-          deepSet(attributes, EXTRA, extra);
-          deepSet(attributes, SLICE, []);
-          attributes[XA_CONTEXT] = context; // todo to be deprecated
-          attributes[XA_EXTRA] = extra; // todo to be deprecated
+          var extra = __assign({}, (deepGet(props, EXTRA) || props[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, PROPS + "." + EXTRA)
+              || deepGet(parentNode, PROPS + "." + XA_EXTRA)) || {}));
+          deepSet(props, CONTEXT, context);
+          deepSet(props, EXTRA, extra);
+          deepSet(props, SLICE, []);
+          props[XA_CONTEXT] = context; // todo to be deprecated
+          props[XA_EXTRA] = extra; // todo to be deprecated
       }
       var resolved = (node && typeof node.name === "function")
-          ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
+          ? resolveNode(node.name(node[PROPS], node[CHILDREN]), node)
           : node;
       if (isVNode(resolved)) {
           resolved[CHILDREN] = resolved[CHILDREN].reduce(function (acc, child) {
@@ -350,11 +350,11 @@
           newGlueNode = __assign({}, vNode);
           newGlueNode[LIFECYCLE] = CREATE;
           newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return mergeGlueNode(child, null); });
-          deepSet(newGlueNode, PREV_ATTRIBUTES, {});
+          deepSet(newGlueNode, PREV_PROPS, {});
           return newGlueNode;
       }
       if (!vNode) {
-          deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
+          deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
           glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
               ? glueNode[LIFECYCLE]
               : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
@@ -362,8 +362,8 @@
                   : DESTROY);
           return glueNode;
       }
-      deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
-      glueNode[ATTRIBUTES] = vNode[ATTRIBUTES];
+      deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
+      glueNode[PROPS] = vNode[PROPS];
       glueNode[KEY] = vNode[KEY];
       glueNode[NAME] = vNode[NAME];
       glueNode[LIFECYCLE] = UPDATE;
@@ -408,22 +408,22 @@
       return glueNode;
   }
 
-  function createVNode(mayBeTextNode, name, attributes, children) {
-      if (attributes === void 0) { attributes = {}; }
+  function createVNode(mayBeTextNode, name, props, children) {
+      if (props === void 0) { props = {}; }
       if (children === void 0) { children = []; }
       var node = {};
       node[NAME] = name;
-      node[ATTRIBUTES] = attributes;
+      node[PROPS] = props;
       node[CHILDREN] = children;
-      node[KEY] = attributes.key;
+      node[KEY] = props.key;
       if (mayBeTextNode && 'function' !== typeof name) {
           node[NAME] = TEXT_NODE;
-          deepSet(node[ATTRIBUTES], TEXT, name);
+          deepSet(node[PROPS], TEXT, name);
       }
       return node;
   }
 
-  function x(name, attributes) {
+  function x(name, props) {
       var rest = [];
       for (var _i = 2; _i < arguments.length; _i++) {
           rest[_i - 2] = arguments[_i];
@@ -438,7 +438,7 @@
               children.unshift(isVNode(node) && node || createVNode(true, node));
           }
       }
-      return createVNode(false, name, attributes || {}, children);
+      return createVNode(false, name, props || {}, children);
   }
 
   function atto(view, elementOrGlueNode) {
@@ -446,15 +446,15 @@
       var glueNode = elementOrGlueNode instanceof Element
           ? {
               name: elementOrGlueNode.nodeName,
-              attributes: {},
+              props: {},
               children: [],
               element: elementOrGlueNode
           }
           : elementOrGlueNode;
-      var attributes = glueNode[ATTRIBUTES];
-      var rootContext = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
-      deepSet(attributes, CONTEXT, rootContext);
-      attributes[XA_CONTEXT] = rootContext; // todo to be deprecated
+      var props = glueNode[PROPS];
+      var rootContext = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {}; // todo mixed to be deprecated
+      deepSet(props, CONTEXT, rootContext);
+      props[XA_CONTEXT] = rootContext; // todo to be deprecated
       function mutate(context, actualContext, path) {
           if (context === void 0) { context = null; }
           if (actualContext === void 0) { actualContext = rootContext; }
@@ -492,7 +492,7 @@
       }
       function render() {
           var lifecycleEvents = [];
-          var node = mergeGlueNode(resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])), glueNode);
+          var node = mergeGlueNode(resolveNode(x(view, props, glueNode && glueNode[CHILDREN]), x('div', {}, [])), glueNode);
           var patchStack = [
               pickLifecycleEvents(lifecycleEvents, mutate)
           ].reduce(function (acc, stack) { return stack(acc); }, patch(function () {

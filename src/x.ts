@@ -2,7 +2,7 @@ import { VNode } from './VNode'
 import { createVNode } from './createVNode'
 import { isVNode } from './isVNode'
 
-export function x(name, attributes, ...rest): VNode {
+export function x(name, props, ...rest): VNode {
   const children: VNode[] = []
 
   while (rest.length) {
@@ -14,5 +14,5 @@ export function x(name, attributes, ...rest): VNode {
     }
   }
 
-  return createVNode(false, name, attributes || {}, children)
+  return createVNode(false, name, props || {}, children)
 }

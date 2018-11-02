@@ -1,6 +1,6 @@
-import { ATTRIBUTES, CHILDREN, NAME } from './consts/vNodeAttributeNames'
+import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
-import { ELEMENT, LIFECYCLE, PREV, PREV_ATTRIBUTES } from './consts/glueNodeAttributeNames'
+import { ELEMENT, LIFECYCLE, PREV } from './consts/glueNodeAttributeNames'
 import { ElementExtends } from './ElementExtends'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
