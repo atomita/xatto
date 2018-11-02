@@ -1,5 +1,5 @@
 import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
-import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
+import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { TEXT_NODE } from './consts/tagNames'
 import { deepGet } from './deepGet'
@@ -26,8 +26,8 @@ export function createElement(
     updateAttribute(element, name, props[name], null, isSVG, eventProxy)
   }
 
-  element.context = deepGet(props, CONTEXT) || props[CONTEXT] || {} // todo mixed to be deprecated
-  element.extra = deepGet(props, EXTRA) || props[EXTRA] || {} // todo mixed to be deprecated
+  element.context = deepGet(props, CONTEXT) || {}
+  element.extra = deepGet(props, EXTRA) || {}
 
   return element
 }

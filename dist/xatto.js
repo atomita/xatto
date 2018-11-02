@@ -13,12 +13,6 @@
   var EXTRA = 'xa.extra';
   var SLICE = 'xa.slice';
   var TEXT = 'xa.text';
-  /*
-   * Attributes to be deprecated in v1
-   */
-  var XA_CONTEXT = 'xa-context';
-  var XA_EXTRA = 'xa-extra';
-  var XA_SLICE = 'xa-slice';
 
   /**
    * Get an item from an object using separator notation.
@@ -158,8 +152,8 @@
       for (var name_1 in props) {
           updateAttribute(element, name_1, props[name_1], null, isSVG, eventProxy);
       }
-      element.context = deepGet(props, CONTEXT) || props[CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(props, EXTRA) || props[EXTRA] || {}; // todo mixed to be deprecated
+      element.context = deepGet(props, CONTEXT) || {};
+      element.extra = deepGet(props, EXTRA) || {};
       return element;
   }
 
@@ -179,8 +173,6 @@
               updateAttribute(element, name_1, props[name_1], prevAttributes[name_1], isSVG, eventProxy);
           }
       }
-      element.context = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(props, EXTRA) || props[XA_EXTRA] || {}; // todo mixed to be deprecated
       return element;
   }
 
@@ -301,11 +293,9 @@
       var props = node && node[PROPS];
       if (props) {
           var context = deepGet(props, CONTEXT)
-              || props[XA_CONTEXT]
-              || (parentNode && (deepGet(parentNode, PROPS + "." + CONTEXT)
-                  || deepGet(parentNode, PROPS + "." + XA_CONTEXT)))
-              || {}; // todo mixed to be deprecated
-          var slice = deepGet(props, SLICE) || props[XA_SLICE]; // todo mixed to be deprecated
+              || (parentNode && deepGet(parentNode, PROPS + "." + CONTEXT))
+              || {};
+          var slice = deepGet(props, SLICE);
           var sliced = void 0;
           if ('object' !== typeof slice) {
               slice = [slice];
@@ -320,13 +310,10 @@
               }
               context = sliced;
           }
-          var extra = __assign({}, (deepGet(props, EXTRA) || props[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, PROPS + "." + EXTRA)
-              || deepGet(parentNode, PROPS + "." + XA_EXTRA)) || {}));
+          var extra = __assign({}, (deepGet(props, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA) || {}));
           deepSet(props, CONTEXT, context);
           deepSet(props, EXTRA, extra);
           deepSet(props, SLICE, []);
-          props[XA_CONTEXT] = context; // todo to be deprecated
-          props[XA_EXTRA] = extra; // todo to be deprecated
       }
       var resolved = (node && typeof node.name === "function")
           ? resolveNode(node.name(node[PROPS], node[CHILDREN]), node)
@@ -452,9 +439,8 @@
           }
           : elementOrGlueNode;
       var props = glueNode[PROPS];
-      var rootContext = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {}; // todo mixed to be deprecated
+      var rootContext = deepGet(props, CONTEXT) || {};
       deepSet(props, CONTEXT, rootContext);
-      props[XA_CONTEXT] = rootContext; // todo to be deprecated
       function mutate(context, actualContext, path) {
           if (context === void 0) { context = null; }
           if (actualContext === void 0) { actualContext = rootContext; }

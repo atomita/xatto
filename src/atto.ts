@@ -1,5 +1,5 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
-import { CONTEXT, XA_CONTEXT } from './consts/attributeNames'
+import { CONTEXT } from './consts/attributeNames'
 import { ElementExtends } from './ElementExtends'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
@@ -27,9 +27,8 @@ export function atto(
 
   const props = glueNode[PROPS]
 
-  const rootContext: any = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {} // todo mixed to be deprecated
+  const rootContext: any = deepGet(props, CONTEXT) || {}
   deepSet(props, CONTEXT, rootContext)
-  props[XA_CONTEXT] = rootContext // todo to be deprecated
 
   function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
     if (context && context !== actualContext) {
