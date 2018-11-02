@@ -1,59 +1,60 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
+import { Props } from './Props'
+import { ResolvedVNode } from './ResolvedVNode'
+import { VNode } from './VNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
+import { remodelProps } from './remodelProps';
 
-export function resolveNode(node, parentNode) {
-  const props = node && node[PROPS]
+export function resolveNode(
+  node: VNode,
+  parentNode?: VNode | ResolvedVNode
+): ResolvedVNode | undefined {
+  const rawProps = node[PROPS]
 
-  if (props) {
-    let context = deepGet(props, CONTEXT)
-      || (parentNode && deepGet(parentNode, `${PROPS}.${CONTEXT}`))
-      || {}
+  let context = deepGet(rawProps, CONTEXT)
+    || (parentNode && deepGet(parentNode, `${PROPS}.${CONTEXT}`))
+    || {}
 
-    let slice = deepGet(props, SLICE)
-    let sliced: any
+  let slice = deepGet(rawProps, SLICE)
+  let sliced: any
 
-    if ('object' !== typeof slice) {
-      slice = [slice]
+  if ('object' !== typeof slice) {
+    slice = [slice]
+  }
+  const path = slice[0]
+
+  if (path) {
+    sliced = deepGet(context, path)
+    if (!sliced) {
+      const defaultValue = slice[1] || {}
+      sliced = { ...defaultValue }
+      deepSet(context, path, sliced)
     }
-    const path = slice[0]
-
-    if (path) {
-      sliced = deepGet(context, path)
-      if (!sliced) {
-        const defaultValue = slice[1] || {}
-        sliced = { ...defaultValue }
-        deepSet(context, path, sliced)
-      }
-      context = sliced
-    }
-
-    const extra = {
-      ...(deepGet(props, EXTRA) || {}),
-      ...(parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {})
-    }
-
-    deepSet(props, CONTEXT, context)
-    deepSet(props, EXTRA, extra)
-    deepSet(props, SLICE, [])
+    context = sliced
   }
 
+  const extra = {
+    ...(deepGet(rawProps, EXTRA) || {}),
+    ...(parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {})
+  }
+
+  const props = remodelProps(rawProps, context, extra, [])
+
   const resolved = (node && typeof node.name === "function")
-    ? resolveNode(node.name(node[PROPS], node[CHILDREN]), node)
+    ? resolveNode(node.name(props as Props, node[CHILDREN]), node)
     : node
 
   if (isVNode(resolved)) {
-    resolved[CHILDREN] = resolved[CHILDREN].reduce((acc, child) => {
+    resolved![CHILDREN] = resolved![CHILDREN].reduce((acc, child) => {
       const reslvedChild = resolveNode(child, resolved)
       if (reslvedChild) {
-        acc.push(reslvedChild)
+        acc.push(reslvedChild! as ResolvedVNode)
       }
       return acc
-    }, [])
-    return resolved
+    }, [] as ResolvedVNode[])
+    return resolved as ResolvedVNode
   }
-
-  return null
 }

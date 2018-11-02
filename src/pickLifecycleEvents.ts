@@ -1,6 +1,7 @@
 import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
-import { PROPS } from './consts/vNodeAttributeNames'
 import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
+import { PROPS } from './consts/vNodeAttributeNames'
+import { Props } from './Props'
 import { deepGet } from './deepGet'
 import { lifeCycleEventPath } from './lifeCycleEventPath'
 
@@ -8,12 +9,13 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
   return (stack: Function) => (
     glueNode,
     isSVG,
-    eventProxy,
+    eventProxy: (e: Event) => void,
+    elementProps: WeakMap<Element, Props>,
     isDestroy = false
   ) => {
     const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
-    glueNode = stack(glueNode, isSVG, eventProxy, isDestroy)
+    glueNode = stack(glueNode, isSVG, eventProxy, elementProps, isDestroy)
 
     let lifecycleEvent: Function | undefined
 

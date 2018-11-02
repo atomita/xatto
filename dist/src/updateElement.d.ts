@@ -1,2 +1,3 @@
-import { ElementExtends } from './ElementExtends';
-export declare function updateElement(node: any, isSVG: Boolean, eventProxy: any): Element & ElementExtends | Node;
+import { Props } from './Props';
+import { GlueNode } from './GlueNode';
+export declare function updateElement(node: GlueNode, isSVG: Boolean, eventProxy: (e: Event) => void, elementProps: WeakMap<Element, Props>): Element | Node;
