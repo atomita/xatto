@@ -1,5 +1,5 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
-import { CONTEXT, EXTRA, SLICE, XA_CONTEXT, XA_EXTRA, XA_SLICE } from './consts/attributeNames'
+import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
@@ -9,13 +9,10 @@ export function resolveNode(node, parentNode) {
 
   if (props) {
     let context = deepGet(props, CONTEXT)
-      || props[XA_CONTEXT]
-      || (parentNode && (
-        deepGet(parentNode, `${PROPS}.${CONTEXT}`)
-        || deepGet(parentNode, `${PROPS}.${XA_CONTEXT}`)))
-      || {} // todo mixed to be deprecated
+      || (parentNode && deepGet(parentNode, `${PROPS}.${CONTEXT}`))
+      || {}
 
-    let slice = deepGet(props, SLICE) || props[XA_SLICE] // todo mixed to be deprecated
+    let slice = deepGet(props, SLICE)
     let sliced: any
 
     if ('object' !== typeof slice) {
@@ -34,17 +31,13 @@ export function resolveNode(node, parentNode) {
     }
 
     const extra = {
-      ...(deepGet(props, EXTRA) || props[XA_EXTRA] || {}),
-      ...(parentNode && (
-        deepGet(parentNode, `${PROPS}.${EXTRA}`)
-        || deepGet(parentNode, `${PROPS}.${XA_EXTRA}`)) || {})
+      ...(deepGet(props, EXTRA) || {}),
+      ...(parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {})
     }
 
     deepSet(props, CONTEXT, context)
     deepSet(props, EXTRA, extra)
     deepSet(props, SLICE, [])
-    props[XA_CONTEXT] = context // todo to be deprecated
-    props[XA_EXTRA] = extra // todo to be deprecated
   }
 
   const resolved = (node && typeof node.name === "function")

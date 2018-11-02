@@ -1,5 +1,5 @@
 import { NAME, PROPS } from './consts/vNodeAttributeNames'
-import { CONTEXT, EXTRA, TEXT, XA_CONTEXT, XA_EXTRA } from './consts/attributeNames'
+import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
 import { ELEMENT, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { ElementExtends } from './ElementExtends'
 import { TEXT_NODE } from './consts/tagNames'
@@ -38,9 +38,6 @@ export function updateElement(
       )
     }
   }
-
-  element.context = deepGet(props, CONTEXT) || props[XA_CONTEXT] || {} // todo mixed to be deprecated
-  element.extra = deepGet(props, EXTRA) || props[XA_EXTRA] || {} // todo mixed to be deprecated
 
   return element
 }
