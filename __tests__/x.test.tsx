@@ -23,10 +23,10 @@ describe('x function', () => {
     const Component = (attrs, children) => <div key={attrs.key}>{children}</div>
 
     assert.deepEqual((<Component key="key">foo</Component>), {
-      attributes: { key: "key" },
+      props: { key: "key" },
       children: [
         {
-          attributes: {
+          props: {
             xa: {
               text: "foo"
             }
