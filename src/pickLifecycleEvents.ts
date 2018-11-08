@@ -15,8 +15,6 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
   ) => {
     const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
-    glueNode = stack(glueNode, isSVG, eventProxy, elementProps, isDestroy)
-
     let lifecycleEvent: Function | undefined
 
     switch (lifecycle) {
@@ -47,6 +45,6 @@ export function pickLifecycleEvents(lifecycleEvents: any[], mutate: Function) {
       })
     }
 
-    return glueNode
+    return stack(glueNode, isSVG, eventProxy, elementProps, isDestroy)
   }
 }
