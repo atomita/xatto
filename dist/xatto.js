@@ -271,6 +271,20 @@
         return element;
     }
 
+    function apply(fn, args) {
+        return fn.apply(null, args);
+    }
+
+    function partial(fn, args) {
+        return function () {
+            var backwardArgs = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                backwardArgs[_i] = arguments[_i];
+            }
+            return apply(fn, args.concat(backwardArgs));
+        };
+    }
+
     function updateElement(node, isSVG, eventProxy, elementProps) {
         var element = node[ELEMENT];
         var props = node[PROPS];
@@ -291,81 +305,91 @@
         return element;
     }
 
-    function patch(patchStack) {
-        return function (glueNode, isSVG, eventProxy, elementProps, isDestroy) {
-            var element;
-            if (!isSVG && glueNode[NAME] === 'svg') {
-                isSVG = true;
-            }
-            if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
-                isDestroy = true;
-            }
-            var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
-                var patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy);
-                return patchedChild ? acc.concat(patchedChild) : acc;
-            }, []);
-            var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
-            switch (lifecycle) {
-                case CREATE:
-                    element = createElement(glueNode, isSVG, eventProxy, elementProps);
-                    break;
-                case UPDATE:
-                    element = updateElement(glueNode, isSVG, eventProxy, elementProps);
-                    break;
-                case DESTROY:
-                    if (glueNode[LIFECYCLE] === DESTROY) {
-                        element = glueNode[ELEMENT];
-                        element.parentElement.removeChild(element);
-                    }
-                    return null;
-                case REMOVE:
-                    glueNode[LIFECYCLE] = REMOVING;
-                default:
+    function patcher(patchStack, glueNode, isSVG, eventProxy, elementProps, isDestroy) {
+        var element;
+        if (!isSVG && glueNode[NAME] === 'svg') {
+            isSVG = true;
+        }
+        if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
+            isDestroy = true;
+        }
+        var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
+            var patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy);
+            return patchedChild ? acc.concat(patchedChild) : acc;
+        }, []);
+        var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
+        switch (lifecycle) {
+            case CREATE:
+                element = createElement(glueNode, isSVG, eventProxy, elementProps);
+                break;
+            case UPDATE:
+                element = updateElement(glueNode, isSVG, eventProxy, elementProps);
+                break;
+            case DESTROY:
+                if (glueNode[LIFECYCLE] === DESTROY) {
                     element = glueNode[ELEMENT];
-            }
-            children.map(function (v) { return v.element; }).reduceRight(function (ref, elm) {
-                element.insertBefore(elm, ref);
-                return elm;
-            }, null);
-            glueNode[CHILDREN] = children;
-            glueNode[ELEMENT] = element;
-            return glueNode;
-        };
+                    element.parentElement.removeChild(element);
+                }
+                return null;
+            case REMOVE:
+                glueNode[LIFECYCLE] = REMOVING;
+            default:
+                element = glueNode[ELEMENT];
+        }
+        children.map(function (v) { return v.element; }).reduceRight(function (ref, elm) {
+            element.insertBefore(elm, ref);
+            return elm;
+        }, null);
+        glueNode[CHILDREN] = children;
+        glueNode[ELEMENT] = element;
+        return glueNode;
+    }
+    function patch( /* mutate: Function */) {
+        return [
+            // patch stack
+            function (patchStack) { return partial(patcher, [patchStack]); }
+            // There is no post-treatment
+        ];
     }
 
-    function pickLifecycleEvents(lifecycleEvents, mutate) {
-        return function (stack) { return function (glueNode, isSVG, eventProxy, elementProps, isDestroy) {
-            if (isDestroy === void 0) { isDestroy = false; }
-            var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
-            var lifecycleEvent;
-            switch (lifecycle) {
-                case CREATE:
-                    lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(CREATE));
-                    break;
-                case UPDATE:
-                    lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(UPDATE));
-                    break;
-                case REMOVE:
-                    var onremove_1 = deepGet(glueNode, lifeCycleEventPath(REMOVE));
-                    var done_1 = function () {
-                        glueNode[LIFECYCLE] = DESTROY;
-                        Promise.resolve().then(mutate);
-                    };
-                    lifecycleEvent = function (element, attrs, prevAttrs) {
-                        onremove_1(element, done_1, attrs, prevAttrs);
-                    };
-                    break;
-                case DESTROY:
-                    lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(DESTROY));
-                    break;
-            }
-            if (lifecycleEvent) {
-                lifecycleEvents.push(function () {
-                    lifecycleEvent(glueNode[ELEMENT], glueNode[PROPS], deepGet(glueNode, PREV_PROPS));
-                });
-            }
-            return stack(glueNode, isSVG, eventProxy, elementProps, isDestroy);
-        }; };
+    function pickupLifecycleEvents(lifecycleEvents, mutate, patchStack, glueNode, isSVG, eventProxy, elementProps, isDestroy) {
+        var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
+        var lifecycleEvent;
+        switch (lifecycle) {
+            case CREATE:
+                lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(CREATE));
+                break;
+            case UPDATE:
+                lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(UPDATE));
+                break;
+            case REMOVE:
+                var onremove_1 = deepGet(glueNode, lifeCycleEventPath(REMOVE));
+                var done_1 = function () {
+                    glueNode[LIFECYCLE] = DESTROY;
+                    Promise.resolve().then(mutate);
+                };
+                lifecycleEvent = function (element, attrs, prevAttrs) {
+                    onremove_1(element, done_1, attrs, prevAttrs);
+                };
+                break;
+            case DESTROY:
+                lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(DESTROY));
+                break;
+        }
+        if (lifecycleEvent) {
+            lifecycleEvents.push(function () {
+                lifecycleEvent(glueNode[ELEMENT], glueNode[PROPS], deepGet(glueNode, PREV_PROPS));
+            });
+        }
+        return patchStack(glueNode, isSVG, eventProxy, elementProps, isDestroy);
+    }
+    function pickLifecycleEvents(mutate) {
+        var lifecycleEvents = [];
+        return [
+            function (stack) { return partial(pickupLifecycleEvents, [lifecycleEvents, mutate, stack]); },
+            // finally
+            function () { return lifecycleEvents.reduce(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0); }
+        ];
     }
 
     function remodelProps(props, context, extra, slice) {
@@ -485,19 +509,20 @@
             mutate(newContext, context);
         }
         function render() {
-            var lifecycleEvents = [];
             var node = mergeGlueNode(resolveNode(x(view, rootProps, glueNode[CHILDREN])) || resolveNode(x('div', {}, [])), glueNode);
-            var patchStack = [
-                pickLifecycleEvents(lifecycleEvents, mutate)
-            ].reduce(function (acc, stack) { return stack(acc); }, patch(function () {
+            var patchStacks = [
+                patch( /* mutate */),
+                pickLifecycleEvents(mutate)
+            ];
+            var patchStack = patchStacks.map(function (v) { return v[0]; }).reduce(function (acc, stack) { return stack(acc); }, function () {
                 var args = [];
                 for (var _i = 0; _i < arguments.length; _i++) {
                     args[_i] = arguments[_i];
                 }
                 return patchStack.apply(null, args);
-            }));
+            });
             glueNode = patchStack(node, 'svg' === node.name, eventProxy, elementProps, false);
-            lifecycleEvents.reduce(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
+            patchStacks.map(function (v) { return v[1] && v[1](); });
         }
         function rendered() {
             scheduled = false;

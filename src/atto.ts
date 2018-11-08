@@ -7,6 +7,7 @@ import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { mergeGlueNode } from './mergeGlueNode'
+import { apply } from './apply'
 import { patch } from './patch'
 import { pickLifecycleEvents } from './pickLifecycleEvents'
 import { remodelProps } from './remodelProps';
@@ -73,11 +74,14 @@ export function atto(
       glueNode
     )
 
-    const patchStack = [
-      pickLifecycleEvents(lifecycleEvents, mutate)
-    ].reduce(
+    const patchStacks: Function[][/* 0: patch stack, 1: finally */] = [
+      patch(/* mutate */),
+      pickLifecycleEvents(mutate)
+    ]
+
+    const patchStack = patchStacks.map(v => v[0]).reduce(
       (acc, stack) => stack(acc),
-      patch((...args) => patchStack.apply(null, args)))
+      (...args) => patchStack.apply(null, args))
 
     glueNode = patchStack(
       node,
@@ -87,7 +91,7 @@ export function atto(
       false
     )
 
-    lifecycleEvents.reduce((_, lifecycleEvent) => lifecycleEvent(), 0)
+    patchStacks.map(v => v[1] && v[1]())
   }
 
   function rendered() {
