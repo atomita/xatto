@@ -10,7 +10,7 @@
     "strict": true,
     "target": "es5",
     "typeRoots": [],
-    "types": [],
+    "types": ["jest"],
     "lib": [
       "es2015",
       "es2016",
