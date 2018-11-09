@@ -1,8 +1,13 @@
+import { Component } from './Component'
 import { VNode } from './VNode'
 import { createVNode } from './createVNode'
 import { isVNode } from './isVNode'
 
-export function x(name, props, ...rest): VNode {
+export function x(
+  name: string | Component | ((name, props, ...rest) => VNode),
+  props: any,
+  ...rest: any[]
+): VNode {
   const children: VNode[] = []
 
   while (rest.length) {

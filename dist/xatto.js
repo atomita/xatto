@@ -409,7 +409,37 @@
             && 4 === Object.keys(value).length;
     }
 
+    function x(name, props) {
+        var rest = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            rest[_i - 2] = arguments[_i];
+        }
+        var children = [];
+        while (rest.length) {
+            var node = rest.pop();
+            if (node && Array.isArray(node)) {
+                rest = rest.concat(node);
+            }
+            else if (node != null && node !== true && node !== false) {
+                children.unshift(isVNode(node) && node || createVNode(true, node));
+            }
+        }
+        return createVNode(false, name, props || {}, children);
+    }
+
+    function resolveChildren(children, parentNode) {
+        return children.reduce(function (childs, child) {
+            childs.push.apply(childs, resolveNode(child, parentNode));
+            return childs;
+        }, []);
+    }
     function resolveNode(node, parentNode) {
+        if (!node) {
+            return [];
+        }
+        if (x === node.name) { // Fragment
+            return resolveChildren(node[CHILDREN], parentNode);
+        }
         var rawProps = node[PROPS];
         var context = deepGet(rawProps, CONTEXT)
             || (parentNode && deepGet(parentNode, PROPS + "." + CONTEXT))
@@ -431,37 +461,16 @@
         }
         var extra = __assign({}, (deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA) || {}));
         var props = remodelProps(rawProps, context, extra, []);
-        var resolved = (node && typeof node.name === "function")
+        var resolveds = (typeof node.name === "function"
             ? resolveNode(node.name(props, node[CHILDREN]), node)
-            : node;
-        if (isVNode(resolved)) {
-            resolved[CHILDREN] = resolved[CHILDREN].reduce(function (acc, child) {
-                var reslvedChild = resolveNode(child, resolved);
-                if (reslvedChild) {
-                    acc.push(reslvedChild);
-                }
-                return acc;
-            }, []);
-            return resolved;
-        }
-    }
-
-    function x(name, props) {
-        var rest = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            rest[_i - 2] = arguments[_i];
-        }
-        var children = [];
-        while (rest.length) {
-            var node = rest.pop();
-            if (node && Array.isArray(node)) {
-                rest = rest.concat(node);
+            : [node]).reduce(function (acc, resolved) {
+            if (isVNode(resolved)) {
+                resolved[CHILDREN] = resolveChildren(resolved[CHILDREN], resolved);
+                acc.push(resolved);
             }
-            else if (node != null && node !== true && node !== false) {
-                children.unshift(isVNode(node) && node || createVNode(true, node));
-            }
-        }
-        return createVNode(false, name, props || {}, children);
+            return acc;
+        }, []);
+        return resolveds;
     }
 
     function atto(view, elementOrGlueNode) {
@@ -509,7 +518,8 @@
             mutate(newContext, context);
         }
         function render() {
-            var node = mergeGlueNode(resolveNode(x(view, rootProps, glueNode[CHILDREN])) || resolveNode(x('div', {}, [])), glueNode);
+            var root = resolveNode(x(view, rootProps, glueNode[CHILDREN]))[0];
+            var node = mergeGlueNode(root, glueNode);
             var patchStacks = [
                 patch( /* mutate */),
                 pickLifecycleEvents(mutate)

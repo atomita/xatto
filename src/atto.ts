@@ -69,10 +69,9 @@ export function atto(
   function render() {
     const lifecycleEvents: Function[] = []
 
-    const node = mergeGlueNode(
-      resolveNode(x(view, rootProps, glueNode[CHILDREN])) || resolveNode(x('div', {}, [])),
-      glueNode
-    )
+    const root = resolveNode(x(view, rootProps, glueNode[CHILDREN]))[0]
+
+    const node = mergeGlueNode(root, glueNode)
 
     const patchStacks: Function[][/* 0: patch stack, 1: finally */] = [
       patch(/* mutate */),

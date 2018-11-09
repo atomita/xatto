@@ -1,17 +1,37 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
+import { Component } from './Component'
 import { Props } from './Props'
 import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
-import { remodelProps } from './remodelProps';
+import { remodelProps } from './remodelProps'
+import { x } from './x'
+
+function resolveChildren(
+  children: VNode[],
+  parentNode?: VNode | ResolvedVNode
+) {
+  return children.reduce((childs, child) => {
+    childs.push.apply(childs, resolveNode(child, parentNode))
+    return childs
+  }, [] as ResolvedVNode[])
+}
 
 export function resolveNode(
-  node: VNode,
+  node?: VNode,
   parentNode?: VNode | ResolvedVNode
-): ResolvedVNode | undefined {
+): ResolvedVNode[] {
+  if (!node) {
+    return []
+  }
+
+  if (x === node.name) { // Fragment
+    return resolveChildren(node[CHILDREN], parentNode)
+  }
+
   const rawProps = node[PROPS]
 
   let context = deepGet(rawProps, CONTEXT)
@@ -43,18 +63,16 @@ export function resolveNode(
 
   const props = remodelProps(rawProps, context, extra, [])
 
-  const resolved = (node && typeof node.name === "function")
-    ? resolveNode(node.name(props as Props, node[CHILDREN]), node)
-    : node
+  const resolveds = (typeof node.name === "function"
+    ? resolveNode((node!.name as Component)(props as Props, node[CHILDREN]), node)
+    : [node]
+  ).reduce((acc, resolved) => {
+    if (isVNode(resolved)) {
+      resolved![CHILDREN] = resolveChildren(resolved![CHILDREN], resolved)
+      acc.push(resolved as ResolvedVNode)
+    }
+    return acc
+  }, [] as ResolvedVNode[])
 
-  if (isVNode(resolved)) {
-    resolved![CHILDREN] = resolved![CHILDREN].reduce((acc, child) => {
-      const reslvedChild = resolveNode(child, resolved)
-      if (reslvedChild) {
-        acc.push(reslvedChild! as ResolvedVNode)
-      }
-      return acc
-    }, [] as ResolvedVNode[])
-    return resolved as ResolvedVNode
-  }
+  return resolveds
 }

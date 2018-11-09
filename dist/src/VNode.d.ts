@@ -1,7 +1,7 @@
-import { Props } from './Props';
+import { Component } from './Component';
 export interface VNode {
     children: VNode[];
     key: any;
-    name: string | ((props_: Props, chilren_: VNode[]) => VNode);
+    name: string | Component | ((name: any, props: any, ...rest: any[]) => VNode);
     props: any;
 }
