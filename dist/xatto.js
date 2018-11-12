@@ -11,6 +11,7 @@
 
     var CONTEXT = 'xa.context';
     var EXTRA = 'xa.extra';
+    var FILL = 'xa.fill';
     var SLICE = 'xa.slice';
     var TEXT = 'xa.text';
 
@@ -392,10 +393,9 @@
         ];
     }
 
-    function remodelProps(props, context, extra, slice) {
+    function remodelProps(props, context, extra) {
         deepSet(props, CONTEXT, context || deepGet(props, CONTEXT) || {});
         deepSet(props, EXTRA, extra || deepGet(props, EXTRA) || {});
-        deepSet(props, SLICE, slice || deepGet(props, SLICE) || []);
         return props;
     }
 
@@ -445,22 +445,17 @@
             || (parentNode && deepGet(parentNode, PROPS + "." + CONTEXT))
             || {};
         var slice = deepGet(rawProps, SLICE);
-        var sliced;
-        if ('object' !== typeof slice) {
-            slice = [slice];
-        }
-        var path = slice[0];
-        if (path) {
-            sliced = deepGet(context, path);
+        if (slice) {
+            var sliced = deepGet(context, slice);
             if (!sliced) {
-                var defaultValue = slice[1] || {};
-                sliced = __assign({}, defaultValue);
-                deepSet(context, path, sliced);
+                var fill = deepGet(rawProps, FILL) || {};
+                sliced = __assign({}, fill);
+                deepSet(context, slice, sliced);
             }
             context = sliced;
         }
         var extra = __assign({}, (deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA) || {}));
-        var props = remodelProps(rawProps, context, extra, []);
+        var props = remodelProps(rawProps, context, extra);
         var resolveds = (typeof node.name === "function"
             ? resolveNode(node.name(props, node[CHILDREN]), node)
             : [node]).reduce(function (acc, resolved) {

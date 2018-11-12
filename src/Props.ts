@@ -3,7 +3,9 @@ export interface Props {
   xa: {
     context: any;
     extra: any;
-    slice: string | any[];
+
+    fill?: any;
+    slice?: string;
 
     text?: string;
   };

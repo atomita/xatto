@@ -1,5 +1,5 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
-import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
+import { CONTEXT, EXTRA, FILL, SLICE } from './consts/attributeNames'
 import { Component } from './Component'
 import { Props } from './Props'
 import { ResolvedVNode } from './ResolvedVNode'
@@ -38,20 +38,14 @@ export function resolveNode(
     || (parentNode && deepGet(parentNode, `${PROPS}.${CONTEXT}`))
     || {}
 
-  let slice = deepGet(rawProps, SLICE)
-  let sliced: any
+  let slice = deepGet(rawProps, SLICE) as string
 
-  if ('object' !== typeof slice) {
-    slice = [slice]
-  }
-  const path = slice[0]
-
-  if (path) {
-    sliced = deepGet(context, path)
+  if (slice) {
+    let sliced = deepGet(context, slice)
     if (!sliced) {
-      const defaultValue = slice[1] || {}
-      sliced = { ...defaultValue }
-      deepSet(context, path, sliced)
+      const fill = deepGet(rawProps, FILL) || {}
+      sliced = { ...fill }
+      deepSet(context, slice, sliced)
     }
     context = sliced
   }
@@ -61,7 +55,7 @@ export function resolveNode(
     ...(parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {})
   }
 
-  const props = remodelProps(rawProps, context, extra, [])
+  const props = remodelProps(rawProps, context, extra)
 
   const resolveds = (typeof node.name === "function"
     ? resolveNode((node!.name as Component)(props as Props, node[CHILDREN]), node)
