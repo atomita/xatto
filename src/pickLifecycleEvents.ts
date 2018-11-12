@@ -60,6 +60,6 @@ export function pickLifecycleEvents(mutate: Function) {
     (stack: Function) => partial(pickupLifecycleEvents, [lifecycleEvents, mutate, stack]),
 
     // finally
-    () => lifecycleEvents.reduce((_, lifecycleEvent) => lifecycleEvent(), 0)
+    () => lifecycleEvents.reduceRight((_, lifecycleEvent) => lifecycleEvent(), 0)
   ]
 }
