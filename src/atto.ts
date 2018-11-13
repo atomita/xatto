@@ -59,9 +59,8 @@ export function atto(
 
     const props = elementProps.get(element)
     const context = deepGet(props, CONTEXT)
-    const extra = deepGet(props, EXTRA)
 
-    const newContext = props!["on" + event.type](event, context, extra)
+    const newContext = props!["on" + event.type](context, props, event)
 
     mutate(newContext, context)
   }
