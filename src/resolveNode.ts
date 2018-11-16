@@ -4,6 +4,7 @@ import { Component } from './Component'
 import { Props } from './Props'
 import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
+import { assign } from './assign'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
@@ -44,16 +45,16 @@ export function resolveNode(
     let sliced = deepGet(context, slice)
     if (!sliced) {
       const fill = deepGet(rawProps, FILL) || {}
-      sliced = { ...fill }
+      sliced = assign({}, fill)
       deepSet(context, slice, sliced)
     }
     context = sliced
   }
 
-  const extra = {
-    ...(deepGet(rawProps, EXTRA) || {}),
-    ...(parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {})
-  }
+  const extra = assign(
+    assign({}, deepGet(rawProps, EXTRA) || {}),
+    parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {}
+  )
 
   const props = remodelProps(rawProps, context, extra)
 
