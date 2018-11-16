@@ -26,7 +26,7 @@
     "build": "npm run bundle:clean && npm run minify",
     "bundle": "rollup --config",
     "bundle:clean": "rm -rf ./dist && npm run bundle",
-    "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=dist/xatto.min.js.map",
+    "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=xatto.min.js.map",
     "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
   },
   "husky": {
