@@ -3,6 +3,7 @@ import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
 import { GlueNode } from './GlueNode'
 import { Props } from './Props'
 import { VNode } from './VNode'
+import { assign } from './assign'
 import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
@@ -31,8 +32,8 @@ export function atto(
 
   const elementProps = new WeakMap<Element, Props>()
 
-  function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
-    if (context && context !== actualContext) {
+  function mutate(context: any, actualContext = rootContext, path: string | null = null) {
+    if (context) {
       if ('function' === typeof context) {
         return context(mutate, actualContext, rootContext)
       } else if (context instanceof Promise) {
@@ -44,14 +45,19 @@ export function atto(
         }
         const targetContext = path ? (deepGet(actualContext, path) || {}) : actualContext
 
-        Object.entries(context).map(([k, v]) => targetContext[k] = v)
+        if (context === targetContext) {
+          return
+        }
+
+        assign(targetContext, context)
 
         if (path) {
           deepSet(actualContext, path, targetContext)
         }
+
+        scheduleRender()
       }
     }
-    scheduleRender()
   }
 
   function eventProxy(event: Event) {

@@ -33,7 +33,7 @@ function pickupLifecycleEvents(
       const onremove: Function = deepGet(glueNode, lifeCycleEventPath(REMOVE))
       const done = () => {
         glueNode[LIFECYCLE] = DESTROY
-        Promise.resolve().then(mutate as any)
+        Promise.resolve({}).then(mutate as any)
       }
       lifecycleEvent = (element, attrs, prevAttrs) => {
         onremove(element, done, attrs, prevAttrs)
