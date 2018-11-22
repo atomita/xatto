@@ -1,5 +1,5 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
-import { CONTEXT, EXTRA, SLICE } from './consts/attributeNames'
+import { CONTEXT, EXTRA, PATH, SLICE } from './consts/attributeNames'
 import { GlueNode } from './GlueNode'
 import { Props } from './Props'
 import { VNode } from './VNode'
@@ -28,31 +28,33 @@ export function atto(
 
   const rootProps = remodelProps(glueNode[PROPS])
 
-  const rootContext: any = deepGet(rootProps, CONTEXT)
+  let rootContext: any = deepGet(rootProps, CONTEXT)
 
   const elementProps = new WeakMap<Element, Props>()
 
-  function mutate(context: any, actualContext = rootContext, path: string | null = null) {
+  function mutate(context: any, path: string = '') {
     if (context) {
+      if (context instanceof Promise) {
+        return context.then(newContext => mutate(newContext, path))
+      }
+
       if ('function' === typeof context) {
-        return context(mutate, actualContext, rootContext)
-      } else if (context instanceof Promise) {
-        return context.then(newContext => mutate(newContext, actualContext, path))
-      } else if ('object' === typeof context) {
-        if (null == path && 'string' === typeof actualContext) {
-          path = actualContext
-          actualContext = rootContext
-        }
-        const targetContext = path ? (deepGet(actualContext, path) || {}) : actualContext
+        return context(mutate, rootContext)
+      }
+
+      if ('object' === typeof context) {
+        const targetContext = getTargetContext(path || '')
 
         if (context === targetContext) {
           return
         }
 
-        assign(targetContext, context)
+        const newContext = assign(assign({}, targetContext), context)
 
         if (path) {
-          deepSet(actualContext, path, targetContext)
+          deepSet(rootContext, path, newContext)
+        } else {
+          rootContext = newContext
         }
 
         scheduleRender()
@@ -60,21 +62,25 @@ export function atto(
     }
   }
 
+  function getTargetContext(path: string, def: any = {}) {
+    return (path ? deepGet(rootContext, path) : rootContext) || def
+  }
+
   function eventProxy(event: Event) {
     const element = event.currentTarget as Element
 
     const props = elementProps.get(element)
-    const context = deepGet(props, CONTEXT)
+    const path = deepGet(props, PATH) as string
 
-    const newContext = props!["on" + event.type](context, props, event)
+    const newContext = props!["on" + event.type](getTargetContext(path), props, event)
 
-    mutate(newContext, context)
+    mutate(newContext, path)
   }
 
   function render() {
     const lifecycleEvents: Function[] = []
 
-    const root = resolveNode(x(view, rootProps, glueNode[CHILDREN]))[0]
+    const root = resolveNode(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
 
     const node = mergeGlueNode(root, glueNode)
 

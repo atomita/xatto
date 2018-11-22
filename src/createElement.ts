@@ -5,7 +5,6 @@ import { Props } from './Props'
 import { TEXT_NODE } from './consts/tagNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
-import { resolveNode } from './resolveNode'
 import { updateAttribute } from './updateAttribute'
 
 export function createElement(
