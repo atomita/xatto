@@ -78,8 +78,6 @@ export function atto(
   }
 
   function render() {
-    const lifecycleEvents: Function[] = []
-
     const root = resolveNode(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
 
     const node = mergeGlueNode(root, glueNode)
