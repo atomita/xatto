@@ -12,6 +12,7 @@ import { partial } from './partial'
 import { updateElement } from './updateElement'
 
 function patcher(
+  destroys: Function[],
   patchStack: PatchStack,
   glueNode: GlueNode,
   isSVG: boolean,
@@ -32,11 +33,6 @@ function patcher(
     isDestroy = true
   }
 
-  const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-    const patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy)
-    return patchedChild ? acc.concat(patchedChild) : acc
-  }, [] as GlueNode[])
-
   const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
   switch (lifecycle) {
@@ -49,13 +45,22 @@ function patcher(
     case DESTROY:
       if (glueNode[LIFECYCLE] === DESTROY) {
         element = glueNode[ELEMENT]
-        element.parentElement.removeChild(element)
+        destroys.push(() => element.parentElement.removeChild(element))
       }
-      return null
+      break
     case REMOVE:
       glueNode[LIFECYCLE] = REMOVING
     default:
       element = glueNode[ELEMENT]
+  }
+
+  const children = glueNode[CHILDREN].reduce((acc, childNode) => {
+    const patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy)
+    return patchedChild ? acc.concat(patchedChild) : acc
+  }, [] as GlueNode[])
+
+  if (lifecycle === DESTROY) {
+    return null
   }
 
   children.map(v => v.element!).reduceRight((ref, elm) => {
@@ -70,10 +75,13 @@ function patcher(
 }
 
 export function patch(/* mutate: Function */) {
+  const destroys: Function[] = []
+
   return [
     // patch stack
-    (patchStack: Function) => partial(patcher, [patchStack])
+    (patchStack: Function) => partial(patcher, [destroys, patchStack]),
 
-    // There is no post-treatment
+    // finally
+    () => destroys.reduceRight((_, destroy) => destroy(), 0)
   ]
 }
