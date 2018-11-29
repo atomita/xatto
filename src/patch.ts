@@ -82,6 +82,9 @@ export function patch(/* mutate: Function */) {
     (patchStack: Function) => partial(patcher, [destroys, patchStack]),
 
     // finally
-    () => destroys.reduceRight((_, destroy) => destroy(), 0)
+    (finallyStack: Function) => () => {
+      destroys.reduceRight((_, destroy) => destroy(), 0)
+      finallyStack()
+    }
   ]
 }

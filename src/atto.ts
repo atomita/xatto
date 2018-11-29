@@ -101,7 +101,9 @@ export function atto(
       false
     )
 
-    patchStacks.map(v => v[1] && v[1]())
+    patchStacks.map(v => v[1]).reduce(
+      (acc, end) => end ? end(acc) : acc,
+      () => { })()
   }
 
   function rendered() {
