@@ -2,27 +2,31 @@ import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
 import { Component } from './Component'
 import { Props } from './Props'
+import { ResolveStack } from './ResolveStack'
 import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
 import { assign } from './assign'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
+import { partial } from './partial'
 import { remodelProps } from './remodelProps'
 import { x } from './x'
 
 function resolveChildren(
+  resolveStack: ResolveStack,
   rootContext: any,
   children: VNode[],
   parentNode?: VNode | ResolvedVNode
 ) {
   return children.reduce((childs, child) => {
-    childs.push.apply(childs, resolveNode(rootContext, child, parentNode))
+    childs.push.apply(childs, resolveStack(rootContext, child, parentNode))
     return childs
   }, [] as ResolvedVNode[])
 }
 
-export function resolveNode(
+function resolver(
+  resolveStack: ResolveStack,
   rootContext: any,
   node?: VNode,
   parentNode?: VNode | ResolvedVNode
@@ -32,7 +36,7 @@ export function resolveNode(
   }
 
   if (x === node.name) { // Fragment
-    return resolveChildren(rootContext, node[CHILDREN], parentNode)
+    return resolveChildren(resolveStack, rootContext, node[CHILDREN], parentNode)
   }
 
   const rawProps = node[PROPS]
@@ -71,15 +75,21 @@ export function resolveNode(
   const props = remodelProps(rawProps, context, extra, path)
 
   const resolveds = (typeof node.name === "function"
-    ? resolveNode(rootContext, (node!.name as Component)(props as Props, node[CHILDREN]), node)
+    ? resolveStack(rootContext, (node!.name as Component)(props as Props, node[CHILDREN]), node)
     : [node]
   ).reduce((acc, resolved) => {
     if (isVNode(resolved)) {
-      resolved![CHILDREN] = resolveChildren(rootContext, resolved![CHILDREN], resolved)
+      resolved![CHILDREN] = resolveChildren(resolveStack, rootContext, resolved![CHILDREN], resolved)
       acc.push(resolved as ResolvedVNode)
     }
     return acc
   }, [] as ResolvedVNode[])
 
   return resolveds
+}
+
+export function resolveNode(
+  resolveStack: Function
+) {
+  return partial(resolver, [resolveStack])
 }

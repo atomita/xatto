@@ -78,7 +78,13 @@ export function atto(
   }
 
   function render() {
-    const root = resolveNode(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
+    const resolveStack = ([
+      resolveNode
+    ] as Function[]).reduce(
+      (acc, stack) => stack(acc),
+      (...args) => resolveStack.apply(null, args))
+
+    const root = resolveStack(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
 
     const node = mergeGlueNode(root, glueNode)
 
