@@ -1,7 +1,6 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
 import { mergeGlueNode } from './mergeGlueNode';
 import { patch } from './patch';
-import { pickLifecycleEvents } from './pickLifecycleEvents';
 import { remodelProps } from './remodelProps';
 import { resolveNode } from './resolveNode';
 import { x } from './x'
@@ -27,8 +26,7 @@ export function rendering(
   const node = mergeGlueNode(root, glueNode)
 
   const patchStacks: Function[][/* 0: patch stack, 1: finally */] = [
-    patch(/* mutate */),
-    pickLifecycleEvents(mutate)
+    patch(mutate)
   ]
 
   const patchStack = patchStacks.map(v => v[0]).reduce(

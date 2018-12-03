@@ -9,10 +9,13 @@ import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
 import { deepGet } from './deepGet'
 import { partial } from './partial'
+import { provideFireLifeCycleEvent } from './provideFireLifeCycleEvent';
 import { updateElement } from './updateElement'
 
 function patcher(
+  mutate: Function,
   destroys: Function[],
+  lifecycleEvents: Function[],
   patchStack: PatchStack,
   glueNode: GlueNode,
   isSVG: boolean,
@@ -23,7 +26,7 @@ function patcher(
 
   let patched: any | null = null
 
-  let element
+  let element: Element | Node = glueNode[ELEMENT]!
 
   if (!isSVG && glueNode[NAME] === 'svg') {
     isSVG = true
@@ -35,23 +38,39 @@ function patcher(
 
   const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
 
+  let lifecycleEvent
+  let detail: any = null
+
   switch (lifecycle) {
     case CREATE:
       element = createElement(glueNode, isSVG, eventProxy, elementProps)
       break
     case UPDATE:
-      element = updateElement(glueNode, isSVG, eventProxy, elementProps)
+      [element, lifecycleEvent] = updateElement(glueNode, isSVG, eventProxy, elementProps)
       break
     case DESTROY:
       if (glueNode[LIFECYCLE] === DESTROY) {
-        element = glueNode[ELEMENT]
-        destroys.push(() => element.parentElement.removeChild(element))
+        destroys.push(() => element.parentElement!.removeChild(element))
       }
       break
     case REMOVE:
       glueNode[LIFECYCLE] = REMOVING
-    default:
-      element = glueNode[ELEMENT]
+      detail = {
+        done: () => {
+          glueNode[LIFECYCLE] = DESTROY
+          Promise.resolve({}).then(mutate as any)
+        }
+      }
+  }
+
+  switch (lifecycle) {
+    case CREATE:
+    case DESTROY:
+    case REMOVE:
+      lifecycleEvent = true
+  }
+  if (lifecycleEvent && element instanceof Element) {
+    lifecycleEvents.push(provideFireLifeCycleEvent(element, lifecycle.toLowerCase(), { detail }))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
@@ -74,15 +93,17 @@ function patcher(
   return glueNode
 }
 
-export function patch(/* mutate: Function */) {
+export function patch(mutate: Function) {
   const destroys: Function[] = []
+  const lifecycleEvents: Function[] = []
 
   return [
     // patch stack
-    (patchStack: Function) => partial(patcher, [destroys, patchStack]),
+    (patchStack: Function) => partial(patcher, [mutate, destroys, lifecycleEvents, patchStack]),
 
     // finally
     (finallyStack: Function) => () => {
+      lifecycleEvents.reduceRight((_, lifecycleEvent) => lifecycleEvent(), 0)
       destroys.reduceRight((_, destroy) => destroy(), 0)
       finallyStack()
     }

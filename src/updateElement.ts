@@ -12,37 +12,45 @@ export function updateElement(
   isSVG: Boolean,
   eventProxy: (e: Event) => void,
   elementProps: WeakMap<Element, Props>
-): Element | Node {
-  const element = node[ELEMENT]
+): [Element | Node, boolean] {
+  const element: Element | Node = node[ELEMENT]!
   const props = node[PROPS]
+  const prevProps = deepGet(node, PREV_PROPS) || {}
+
+  let updated = false
 
   if (node[NAME] === TEXT_NODE) {
-    element!.nodeValue = deepGet(props, TEXT) as string
-    return element!
-  }
+    const value = deepGet(props, TEXT) as string
+    const oldValue = deepGet(prevProps, TEXT) as string
 
-  const prevAttributes = deepGet(node, PREV_PROPS) || {}
+    updated = value != oldValue
+    if (updated) {
+      element.nodeValue = deepGet(props, TEXT) as string
+    }
+    return [element as Node, updated]
+  }
 
   for (const name in props) {
     if (
       props[name] !==
       (name === "value" || name === "checked"
-        ? element![name]
-        : prevAttributes[name])
+        ? element[name]
+        : prevProps[name])
     ) {
       updateAttribute(
-        element!,
+        element as Element,
         name,
         props[name],
-        prevAttributes[name],
+        prevProps[name],
         isSVG,
         eventProxy,
         elementProps
       )
+      updated = true
     }
   }
 
-  elementProps.set(element!, props)
+  elementProps.set(element as Element, props)
 
-  return element!
+  return [element as Element, updated]
 }
