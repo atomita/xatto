@@ -1,18 +1,14 @@
-import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
-import { CONTEXT, EXTRA, PATH, SLICE } from './consts/attributeNames'
+import { CONTEXT, PATH } from './consts/attributeNames'
 import { GlueNode } from './GlueNode'
+import { PROPS } from './consts/vNodeAttributeNames';
 import { Props } from './Props'
 import { VNode } from './VNode'
 import { assign } from './assign'
 import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
-import { mergeGlueNode } from './mergeGlueNode'
-import { apply } from './apply'
-import { patch } from './patch'
-import { pickLifecycleEvents } from './pickLifecycleEvents'
 import { remodelProps } from './remodelProps';
-import { resolveNode } from './resolveNode'
+import { rendering } from './rendering';
 import { x } from './x'
 
 export function atto(
@@ -78,36 +74,14 @@ export function atto(
   }
 
   function render() {
-    const resolveStack = ([
-      resolveNode
-    ] as Function[]).reduce(
-      (acc, stack) => stack(acc),
-      (...args) => resolveStack.apply(null, args))
-
-    const root = resolveStack(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
-
-    const node = mergeGlueNode(root, glueNode)
-
-    const patchStacks: Function[][/* 0: patch stack, 1: finally */] = [
-      patch(/* mutate */),
-      pickLifecycleEvents(mutate)
-    ]
-
-    const patchStack = patchStacks.map(v => v[0]).reduce(
-      (acc, stack) => stack(acc),
-      (...args) => patchStack.apply(null, args))
-
-    glueNode = patchStack(
-      node,
-      'svg' === node.name,
+    glueNode = rendering(
+      glueNode,
+      view,
+      rootContext,
+      mutate,
       eventProxy,
-      elementProps,
-      false
+      elementProps
     )
-
-    patchStacks.map(v => v[1]).reduce(
-      (acc, end) => end ? end(acc) : acc,
-      () => { })()
   }
 
   function rendered() {
