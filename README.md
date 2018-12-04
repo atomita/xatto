@@ -42,8 +42,8 @@ npm run serve
 // @jsx x
 import { x, atto } from "xatto"
 
-const down = (event, context) => ({ count: context.count - 1 })
-const up = (event, context) => ({ count: context.count + 1 })
+const down = context => ({ count: context.count - 1 })
+const up = context => ({ count: context.count + 1 })
 
 const view = ({ xa: { context }, ...attrs }, children) => (
   <div>
@@ -58,7 +58,7 @@ atto(view, document.getElementById("app"))({
 })
 ```
 
-https://codepen.io/atomita/pen/pKwjKq
+
 
 ### The counters.
 
@@ -66,8 +66,8 @@ https://codepen.io/atomita/pen/pKwjKq
 // @jsx x
 import { x, atto } from "xatto"
 
-const down = (event, context) => ({ count: context.count - 1 })
-const up = (event, context) => ({ count: context.count + 1 })
+const down = context => ({ count: context.count - 1 })
+const up = context => ({ count: context.count + 1 })
 
 const Counter = ({ xa: { context }, ...attrs }, children) => (
   <div>
@@ -77,15 +77,24 @@ const Counter = ({ xa: { context }, ...attrs }, children) => (
   </div>
 )
 
-const view = ({ xa: { context }, ...attrs }, children) => {
-  return (
-    <div>
-      <Counter xa={{ slice: "counters.0" }} />
-      <Counter xa={{ slice: "counters.1" }} />
-      <Counter xa={{ slice: ["counters.2", { count: 20 }] }} />
-    </div>
-  )
-}
+const add = context => ({
+  counters: context.counters.concat({count: 0})
+})
+
+const cut = context => ({
+  counters: context.counters.slice(0, -1)
+})
+
+const view = ({ xa: { context }, ...attrs }, children) => (
+  <div>
+    <button onclick={add}>add</button>
+    <button onclick={cut}>cut</button>
+
+    {context.counters.map((v, i) => (<Counter xa={{ slice: "counters." + i }} />))}
+
+    <pre>{JSON.stringify(context, null, '  ')}</pre>
+  </div>
+)
 
 atto(view, document.getElementById("app"))({
   counters: [
@@ -95,4 +104,4 @@ atto(view, document.getElementById("app"))({
 })
 ```
 
-https://codepen.io/atomita/pen/eKRpmP
+https://codepen.io/atomita/pen/OaLxwP
