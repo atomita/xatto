@@ -1,6 +1,6 @@
 export interface GlueNode {
     children: GlueNode[];
-    element?: Element;
+    element?: Element | Node;
     i: number;
     key: string;
     name: string;
