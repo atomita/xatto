@@ -2,7 +2,6 @@ import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV } from './consts/glueNodeAttributeNames'
 import { GlueNode } from './GlueNode'
-import { PatchStack } from './PatchStack'
 import { Props } from './Props'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
@@ -12,11 +11,12 @@ import { partial } from './partial'
 import { provideFireLifeCycleEvent } from './provideFireLifeCycleEvent';
 import { updateElement } from './updateElement'
 
-function patcher(
+export function patch(
   mutate: Function,
   destroys: Function[],
   lifecycleEvents: Function[],
-  patchStack: PatchStack,
+  next: Function,
+  recursion: Function,
   glueNode: GlueNode,
   isSVG: boolean,
   eventProxy: (e: Event) => void,
@@ -74,7 +74,7 @@ function patcher(
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-    const patchedChild = patchStack(childNode, isSVG, eventProxy, elementProps, isDestroy)
+    const patchedChild = recursion(childNode, isSVG, eventProxy, elementProps, isDestroy)
     return patchedChild ? acc.concat(patchedChild) : acc
   }, [] as GlueNode[])
 
@@ -91,21 +91,4 @@ function patcher(
   glueNode[ELEMENT] = element
 
   return glueNode
-}
-
-export function patch(mutate: Function) {
-  const destroys: Function[] = []
-  const lifecycleEvents: Function[] = []
-
-  return [
-    // patch stack
-    (patchStack: Function) => partial(patcher, [mutate, destroys, lifecycleEvents, patchStack]),
-
-    // finally
-    (finallyStack: Function) => () => {
-      lifecycleEvents.reduceRight((_, lifecycleEvent) => lifecycleEvent(), 0)
-      destroys.reduceRight((_, destroy) => destroy(), 0)
-      finallyStack()
-    }
-  ]
 }

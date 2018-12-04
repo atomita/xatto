@@ -1,5 +1,6 @@
 import { CONTEXT, PATH } from './consts/attributeNames'
 import { GlueNode } from './GlueNode'
+import { MIDDLEWARES } from './consts/optionNames'
 import { PROPS } from './consts/vNodeAttributeNames';
 import { Props } from './Props'
 import { VNode } from './VNode'
@@ -8,12 +9,14 @@ import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { remodelProps } from './remodelProps';
+import { rendererProvider } from './rendererProvider';
 import { rendering } from './rendering';
 import { x } from './x'
 
 export function atto(
   view: (props: Props, children: VNode[]) => VNode,
-  elementOrGlueNode: Element | GlueNode
+  elementOrGlueNode: Element | GlueNode,
+  options: any = {}
 ) {
 
   let scheduled = false
@@ -27,6 +30,12 @@ export function atto(
   let rootContext: any = deepGet(rootProps, CONTEXT)
 
   const elementProps = new WeakMap<Element, Props>()
+
+  const middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || []
+
+  const rendererProviders = [rendererProvider]
+    .concat(middlewares)
+    .map((provider: Function) => provider(mutate, elementProps, rootContext, view, glueNode))
 
   function mutate(context: any, path: string = '') {
     if (context) {
@@ -78,9 +87,9 @@ export function atto(
       glueNode,
       view,
       rootContext,
-      mutate,
       eventProxy,
-      elementProps
+      elementProps,
+      rendererProviders.map(provider => provider(rootContext))
     )
   }
 

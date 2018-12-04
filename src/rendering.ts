@@ -9,31 +9,33 @@ export function rendering(
   glueNode,
   view,
   rootContext,
-  mutate,
   eventProxy,
-  elementProps
+  elementProps,
+  renderers
 ) {
   const rootProps = remodelProps(glueNode[PROPS])
 
-  const resolveStack = ([
-    resolveNode
-  ] as Function[]).reduce(
-    (acc, stack) => stack(acc),
-    (...args) => resolveStack.apply(null, args))
+  const resolverRecursion = (...args) => resolver.apply(null, args)
 
-  const root = resolveStack(rootContext, x(view, rootProps, glueNode[CHILDREN]))[0]
+  const [resolver] = renderers.map(v => v[0]).reduce(
+    wrapOnion,
+    [noop, resolverRecursion])
 
-  const node = mergeGlueNode(root, glueNode)
+  const patcherRecursion = (...args) => patcher.apply(null, args)
 
-  const patchStacks: Function[][/* 0: patch stack, 1: finally */] = [
-    patch(mutate)
-  ]
+  const [patcher] = renderers.map(v => v[1]).reduce(
+    wrapOnion,
+    [noop, patcherRecursion])
 
-  const patchStack = patchStacks.map(v => v[0]).reduce(
-    (acc, stack) => stack(acc),
-    (...args) => patchStack.apply(null, args))
+  const [finallyer] = renderers.map(v => v[2]).reduce(
+    wrapOnion,
+    [noop, noop])
 
-  glueNode = patchStack(
+  const vNode = resolver(rootContext, x(view, rootProps, []))[0]
+
+  const node = mergeGlueNode(vNode, glueNode)
+
+  glueNode = patcher(
     node,
     'svg' === node.name,
     eventProxy,
@@ -41,9 +43,13 @@ export function rendering(
     false
   )
 
-  patchStacks.map(v => v[1]).reduce(
-    (acc, end) => end ? end(acc) : acc,
-    () => { })()
+  finallyer()
 
   return glueNode
 }
+
+function wrapOnion([next, recursion], stack) {
+  return [stack ? stack(next, recursion) : next, recursion]
+}
+
+function noop() { }
