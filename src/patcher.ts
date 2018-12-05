@@ -7,11 +7,10 @@ import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { createElement } from './createElement'
 import { deepGet } from './deepGet'
-import { partial } from './partial'
-import { provideFireLifeCycleEvent } from './provideFireLifeCycleEvent';
+import { fireLifeCycleEventProvider } from './fireLifeCycleEventProvider';
 import { updateElement } from './updateElement'
 
-export function patch(
+export function patcher(
   mutate: Function,
   destroys: Function[],
   lifecycleEvents: Function[],
@@ -70,7 +69,7 @@ export function patch(
       lifecycleEvent = true
   }
   if (lifecycleEvent && element instanceof Element) {
-    lifecycleEvents.push(provideFireLifeCycleEvent(element, lifecycle.toLowerCase(), { detail }))
+    lifecycleEvents.push(fireLifeCycleEventProvider(element, lifecycle.toLowerCase(), { detail }))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {

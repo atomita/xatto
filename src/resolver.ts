@@ -8,28 +8,26 @@ import { assign } from './assign'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
-import { partial } from './partial'
 import { remodelProps } from './remodelProps'
 import { x } from './x'
 
 function resolveChildren(
   next: Function,
   recursion: Function,
-  rootContext: any,
   children: VNode[],
   parentNode?: VNode | ResolvedVNode
 ) {
   return children.reduce((childs, child) => {
-    childs.push.apply(childs, recursion(rootContext, child, parentNode))
+    childs.push.apply(childs, recursion(child, parentNode))
     return childs
   }, [] as ResolvedVNode[])
 }
 
-export function resolveNode(
+export function resolver(
   getContext,
+  setContext,
   next: Function,
   recursion: Function,
-  rootContext: any,
   node?: VNode,
   parentNode?: VNode | ResolvedVNode
 ): ResolvedVNode[] {
@@ -38,7 +36,7 @@ export function resolveNode(
   }
 
   if (x === node.name) { // Fragment
-    return resolveChildren(next, recursion, rootContext, node[CHILDREN], parentNode)
+    return resolveChildren(next, recursion, node[CHILDREN], parentNode)
   }
 
   const rawProps = node[PROPS]
@@ -64,7 +62,7 @@ export function resolveNode(
 
     sliced = assign({}, fill)
 
-    deepSet(rootContext, path, sliced)
+    setContext(sliced, path)
   }
 
   const context = sliced
@@ -77,11 +75,11 @@ export function resolveNode(
   const props = remodelProps(rawProps, context, extra, path)
 
   const resolveds = (typeof node.name === "function"
-    ? recursion(rootContext, (node!.name as Component)(props as Props, node[CHILDREN]), node)
+    ? recursion((node!.name as Component)(props as Props, node[CHILDREN]), node)
     : [node]
   ).reduce((acc, resolved) => {
     if (isVNode(resolved)) {
-      resolved![CHILDREN] = resolveChildren(next, recursion, rootContext, resolved![CHILDREN], resolved)
+      resolved![CHILDREN] = resolveChildren(next, recursion, resolved![CHILDREN], resolved)
       acc.push(resolved as ResolvedVNode)
     }
     return acc

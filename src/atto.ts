@@ -8,6 +8,7 @@ import { assign } from './assign'
 import { createGlueNodeByElement } from './createGlueNodeByElement';
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
+import { mutateProvider } from './mutateProvider';
 import { remodelProps } from './remodelProps';
 import { rendererProvider } from './rendererProvider';
 import { rendering } from './rendering';
@@ -31,50 +32,29 @@ export function atto(
 
   const middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || []
 
+  const mutate = mutateProvider(getContext, setContext, scheduleRender)
+
   const rendererProviders = [rendererProvider]
     .concat(middlewares)
-    .map((provider: Function) => provider(mutate, getContext, view, glueNode))
-
-  function mutate(context: any, path: string = '') {
-    if (context) {
-      if (context instanceof Promise) {
-        return context.then(newContext => mutate(newContext, path))
-      }
-
-      if ('function' === typeof context) {
-        return context(mutate, rootContext)
-      }
-
-      if ('object' === typeof context) {
-        const targetContext = getContext(path)
-
-        if (context === targetContext) {
-          return
-        }
-
-        const newContext = assign(assign({}, targetContext), context)
-
-        if (path) {
-          deepSet(rootContext, path, newContext)
-        } else {
-          rootContext = newContext
-        }
-
-        scheduleRender()
-      }
-    }
-  }
+    .map((provider: Function) => provider(mutate, getContext, setContext, view, glueNode))
 
   function getContext(path: string, def: any = {}) {
     return (path ? deepGet(rootContext, path) : rootContext) || def
+  }
+
+  function setContext(newContext: any, path?: string) {
+    if (path) {
+      deepSet(rootContext, path, newContext)
+    } else {
+      rootContext = newContext
+    }
   }
 
   function render() {
     glueNode = rendering(
       glueNode,
       view,
-      rootContext,
-      rendererProviders.map(provider => provider(rootContext))
+      rendererProviders.map(provider => provider())
     )
   }
 

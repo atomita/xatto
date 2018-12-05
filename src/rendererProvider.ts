@@ -1,44 +1,30 @@
 import { Props } from "./Props";
 import { eventProxyProvider } from "./eventProxyProvider";
-import { partial } from "./partial";
-import { patch } from "./patch";
-import { resolveNode } from "./resolveNode";
+import { patcherProvider } from "./patcherProvider";
+import { resolverProvider } from "./resolverProvider";
 
-export function rendererProvider(mutate, getContext/*, view, glueNode */) {
+export function rendererProvider(mutate, getContext, setContext/*, view, glueNode */) {
+  const elementProps = new WeakMap<Element, Props>()
+  const eventProxy = eventProxyProvider(mutate, getContext, elementProps)
+
   return () => {
     const destroys: Function[] = []
     const lifecycleEvents: Function[] = []
 
-    const elementProps = new WeakMap<Element, Props>()
-    const eventProxy = eventProxyProvider(mutate, getContext, elementProps)
-
     return [
       // resolver
-      (
-        next: Function,
-        recursion: Function
-      ) => partial(
-        resolveNode, [
-          getContext,
-          next,
-          recursion
-        ]
+      resolverProvider(
+        getContext,
+        setContext
       ),
 
       // pather
-      (
-        next: Function,
-        recursion: Function
-      ) => partial(
-        patch, [
-          mutate,
-          destroys,
-          lifecycleEvents,
-          eventProxy,
-          elementProps,
-          next,
-          recursion
-        ]
+      patcherProvider(
+        mutate,
+        destroys,
+        lifecycleEvents,
+        eventProxy,
+        elementProps
       ),
 
       // finallyer
@@ -50,3 +36,4 @@ export function rendererProvider(mutate, getContext/*, view, glueNode */) {
     ] as [Function | undefined, Function | undefined, Function | undefined]
   }
 }
+

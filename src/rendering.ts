@@ -6,7 +6,6 @@ import { x } from './x'
 export function rendering(
   glueNode,
   view,
-  rootContext,
   renderers
 ) {
   const rootProps = remodelProps(glueNode[PROPS])
@@ -27,7 +26,7 @@ export function rendering(
     wrapOnion,
     [noop, noop])
 
-  const vNode = resolver(rootContext, x(view, rootProps, []))[0]
+  const vNode = resolver(x(view, rootProps, []))[0]
 
   const node = mergeGlueNode(vNode, glueNode)
 
