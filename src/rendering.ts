@@ -1,16 +1,12 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
 import { mergeGlueNode } from './mergeGlueNode';
-import { patch } from './patch';
 import { remodelProps } from './remodelProps';
-import { resolveNode } from './resolveNode';
 import { x } from './x'
 
 export function rendering(
   glueNode,
   view,
   rootContext,
-  eventProxy,
-  elementProps,
   renderers
 ) {
   const rootProps = remodelProps(glueNode[PROPS])
@@ -38,8 +34,6 @@ export function rendering(
   glueNode = patcher(
     node,
     'svg' === node.name,
-    eventProxy,
-    elementProps,
     false
   )
 

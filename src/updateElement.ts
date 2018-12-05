@@ -43,8 +43,7 @@ export function updateElement(
         props[name],
         prevProps[name],
         isSVG,
-        eventProxy,
-        elementProps
+        eventProxy
       )
       updated = true
     }

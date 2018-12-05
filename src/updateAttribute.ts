@@ -7,8 +7,7 @@ export function updateAttribute(
   value,
   oldValue,
   isSVG: Boolean,
-  eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>
+  eventProxy: (e: Event) => void
 ) {
   if (name === "key" || 'object' === typeof value) {
     // noop

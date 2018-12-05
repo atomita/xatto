@@ -26,6 +26,7 @@ function resolveChildren(
 }
 
 export function resolveNode(
+  getContext,
   next: Function,
   recursion: Function,
   rootContext: any,
@@ -56,7 +57,7 @@ export function resolveNode(
       : (slice || parentPath) as string
   }
 
-  let sliced = path ? deepGet(rootContext, path) : rootContext
+  let sliced = getContext(path)
 
   if (!sliced) {
     const fill = deepGet(rawProps, FILL) || {}

@@ -24,7 +24,7 @@ export function createElement(
     : document.createElement(node[NAME])
 
   for (const name in props) {
-    updateAttribute(element, name, props[name], null, isSVG, eventProxy, elementProps)
+    updateAttribute(element, name, props[name], null, isSVG, eventProxy)
   }
 
   elementProps.set(element, props)

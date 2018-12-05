@@ -15,12 +15,12 @@ export function patch(
   mutate: Function,
   destroys: Function[],
   lifecycleEvents: Function[],
+  eventProxy: (e: Event) => void,
+  elementProps: WeakMap<Element, Props>,
   next: Function,
   recursion: Function,
   glueNode: GlueNode,
   isSVG: boolean,
-  eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>,
   isDestroy: boolean
 ): GlueNode | null {
 
@@ -74,7 +74,7 @@ export function patch(
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-    const patchedChild = recursion(childNode, isSVG, eventProxy, elementProps, isDestroy)
+    const patchedChild = recursion(childNode, isSVG, isDestroy)
     return patchedChild ? acc.concat(patchedChild) : acc
   }, [] as GlueNode[])
 

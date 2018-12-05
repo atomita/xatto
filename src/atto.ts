@@ -1,4 +1,4 @@
-import { CONTEXT, PATH } from './consts/attributeNames'
+import { CONTEXT } from './consts/attributeNames'
 import { GlueNode } from './GlueNode'
 import { MIDDLEWARES } from './consts/optionNames'
 import { PROPS } from './consts/vNodeAttributeNames';
@@ -29,13 +29,11 @@ export function atto(
 
   let rootContext: any = deepGet(rootProps, CONTEXT)
 
-  const elementProps = new WeakMap<Element, Props>()
-
   const middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || []
 
   const rendererProviders = [rendererProvider]
     .concat(middlewares)
-    .map((provider: Function) => provider(mutate, elementProps, rootContext, view, glueNode))
+    .map((provider: Function) => provider(mutate, getContext, view, glueNode))
 
   function mutate(context: any, path: string = '') {
     if (context) {
@@ -48,7 +46,7 @@ export function atto(
       }
 
       if ('object' === typeof context) {
-        const targetContext = getTargetContext(path || '')
+        const targetContext = getContext(path)
 
         if (context === targetContext) {
           return
@@ -67,19 +65,8 @@ export function atto(
     }
   }
 
-  function getTargetContext(path: string, def: any = {}) {
+  function getContext(path: string, def: any = {}) {
     return (path ? deepGet(rootContext, path) : rootContext) || def
-  }
-
-  function eventProxy(event: Event) {
-    const element = event.currentTarget as Element
-
-    const props = elementProps.get(element)
-    const path = deepGet(props, PATH) as string
-
-    const newContext = props!["on" + event.type](getTargetContext(path), props, event)
-
-    mutate(newContext, path)
   }
 
   function render() {
@@ -87,8 +74,6 @@ export function atto(
       glueNode,
       view,
       rootContext,
-      eventProxy,
-      elementProps,
       rendererProviders.map(provider => provider(rootContext))
     )
   }
