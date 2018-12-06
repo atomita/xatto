@@ -1,1 +1,1 @@
-export declare function currentOnlyEventHandler(eventHandler: Function): (context: any, props: any, event: any) => any;
+export declare function currentOnlyEventHandler(eventHandler: Function): any;

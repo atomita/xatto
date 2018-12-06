@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.2
+xatto v1.0.0-rc.3
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -167,7 +167,8 @@ Released under the MIT License.
           var element = event.currentTarget;
           var props = elementProps.get(element);
           var path = deepGet(props, PATH);
-          var newContext = props["on" + event.type](getContext(path), props, event);
+          var detail = event.detail || {};
+          var newContext = props["on" + event.type](getContext(path), detail, props, event);
           mutate(newContext, path);
       };
   }
@@ -312,7 +313,7 @@ Released under the MIT License.
               break;
           case DESTROY:
               lifecycleEvent = true;
-              destroys.push(function () { return element.parentElement.removeChild(element); });
+              destroys.push(function () { return element.parentElement && element.parentElement.removeChild(element); });
               break;
           case REMOVE:
               lifecycleEvent = true;
@@ -579,12 +580,16 @@ Released under the MIT License.
       return mutate;
   }
 
+  var memorize = new WeakMap();
   function currentOnlyEventHandler(eventHandler) {
-      return function (context, props, event) {
-          if (event.currentTarget === event.target) {
-              return eventHandler(context, props, event);
-          }
-      };
+      if (!memorize.has(eventHandler)) {
+          memorize.set(eventHandler, function (context, props, event) {
+              if (event.currentTarget === event.target) {
+                  return eventHandler(context, props, event);
+              }
+          });
+      }
+      return memorize.get(eventHandler);
   }
 
   exports.atto = atto;
