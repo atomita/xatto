@@ -1,5 +1,5 @@
 /*
-xatto v0.1.16
+xatto v1.0.0-rc.2
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -23,15 +23,6 @@ Released under the MIT License.
   var NAME = 'name';
   var PROPS = 'props';
 
-  function assign(target, source) {
-      for (var key in source) {
-          if (source.hasOwnProperty(key)) {
-              target[key] = source[key];
-          }
-      }
-      return target;
-  }
-
   var ELEMENT = 'element';
   var LIFECYCLE = 'lifecycle';
   var PREV = 'prev';
@@ -42,6 +33,15 @@ Released under the MIT License.
   var REMOVE = 'remove';
   var REMOVING = 'removing';
   var UPDATE = 'update';
+
+  function assign(target, source) {
+      for (var key in source) {
+          if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+          }
+      }
+      return target;
+  }
 
   /**
    * Set an object item to a given value using separator notation.
@@ -130,6 +130,31 @@ Released under the MIT License.
       }
   }
 
+  function mutate(getContext, setContext, scheduleRender, context, path) {
+      if (path === void 0) { path = ''; }
+      if (context) {
+          if (context instanceof Promise) {
+              return context.then(function (newContext) { return mutate(getContext, setContext, newContext, path); });
+          }
+          if ('function' === typeof context) {
+              return context(mutate, getContext);
+          }
+          if ('object' === typeof context) {
+              var targetContext = getContext(path);
+              if (context === targetContext) {
+                  return;
+              }
+              var newContext = assign(assign({}, targetContext), context);
+              setContext(newContext, path);
+              scheduleRender();
+          }
+      }
+  }
+
+  function mutateProvider(getContext, setContext, scheduleRender) {
+      return function (context, path) { return mutate(getContext, setContext, scheduleRender, context, path); };
+  }
+
   function remodelProps(props, context, extra, path) {
       deepSet(props, CONTEXT, context || deepGet(props, CONTEXT) || {});
       deepSet(props, EXTRA, extra || deepGet(props, EXTRA) || {});
@@ -137,24 +162,20 @@ Released under the MIT License.
       return props;
   }
 
-  function apply(fn, args) {
-      return fn.apply(null, args);
-  }
-
-  function partial(fn, args) {
-      return function () {
-          var backwardArgs = [];
-          for (var _i = 0; _i < arguments.length; _i++) {
-              backwardArgs[_i] = arguments[_i];
-          }
-          return apply(fn, args.concat(backwardArgs));
+  function eventProxyProvider(mutate, getContext, elementProps) {
+      return function (event) {
+          var element = event.currentTarget;
+          var props = elementProps.get(element);
+          var path = deepGet(props, PATH);
+          var newContext = props["on" + event.type](getContext(path), props, event);
+          mutate(newContext, path);
       };
   }
 
   var XLINK_NS = "http://www.w3.org/1999/xlink";
 
-  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy, elementProps) {
-      if (name === "key" || 'object' === typeof value) {
+  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
+      if ('object' === typeof value) {
           // noop
       }
       else {
@@ -216,13 +237,13 @@ Released under the MIT License.
           ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
           : document.createElement(node[NAME]);
       for (var name_1 in props) {
-          updateAttribute(element, name_1, props[name_1], null, isSVG, eventProxy, elementProps);
+          updateAttribute(element, name_1, props[name_1], null, isSVG, eventProxy);
       }
       elementProps.set(element, props);
       return element;
   }
 
-  function provideFireLifeCycleEvent(elm, eventName, option) {
+  function fireLifeCycleEventProvider(elm, eventName, option) {
       if (option === void 0) { option = {}; }
       var event = new CustomEvent(eventName, option);
       return function () { return elm.dispatchEvent(event); };
@@ -247,7 +268,7 @@ Released under the MIT License.
               (name_1 === "value" || name_1 === "checked"
                   ? element[name_1]
                   : prevProps[name_1])) {
-              updateAttribute(element, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy, elementProps);
+              updateAttribute(element, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
               updated = true;
           }
       }
@@ -255,50 +276,59 @@ Released under the MIT License.
       return [element, updated];
   }
 
-  function patch(mutate, destroys, lifecycleEvents, next, recursion, glueNode, isSVG, eventProxy, elementProps, isDestroy) {
+  var shouldBeCaptureLifecycles = {};
+  shouldBeCaptureLifecycles[REMOVE] = 1;
+  shouldBeCaptureLifecycles[REMOVING] = 2;
+  shouldBeCaptureLifecycles[DESTROY] = 3;
+  function patcher(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds, next, recursion, glueNode, isSVG, captureLifecycle) {
       var _a;
+      var newGlueNode = assign({}, glueNode);
       var element = glueNode[ELEMENT];
       if (!isSVG && glueNode[NAME] === 'svg') {
           isSVG = true;
       }
-      if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
-          isDestroy = true;
+      var rawLifecycle = glueNode[LIFECYCLE];
+      if (rawLifecycle === REMOVING
+          && element instanceof Element
+          && elementRemoveds.has(element)) {
+          rawLifecycle = DESTROY;
       }
-      var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
+      var shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle];
+      var shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle];
+      var lifecycle = shouldBeCaptureLifecycleByCaptured
+          && (!shouldBeCaptureLifecycle || shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured)
+          && captureLifecycle
+          || rawLifecycle;
+      newGlueNode[LIFECYCLE] = lifecycle;
       var lifecycleEvent;
       var detail = null;
       switch (lifecycle) {
           case CREATE:
+              lifecycleEvent = true;
               element = createElement(glueNode, isSVG, eventProxy, elementProps);
               break;
           case UPDATE:
               _a = updateElement(glueNode, isSVG, eventProxy, elementProps), element = _a[0], lifecycleEvent = _a[1];
               break;
           case DESTROY:
-              if (glueNode[LIFECYCLE] === DESTROY) {
-                  destroys.push(function () { return element.parentElement.removeChild(element); });
-              }
+              lifecycleEvent = true;
+              destroys.push(function () { return element.parentElement.removeChild(element); });
               break;
           case REMOVE:
-              glueNode[LIFECYCLE] = REMOVING;
+              lifecycleEvent = true;
+              newGlueNode[LIFECYCLE] = REMOVING;
               detail = {
                   done: function () {
-                      glueNode[LIFECYCLE] = DESTROY;
+                      elementRemoveds.set(element, true);
                       Promise.resolve({}).then(mutate);
                   }
               };
       }
-      switch (lifecycle) {
-          case CREATE:
-          case DESTROY:
-          case REMOVE:
-              lifecycleEvent = true;
-      }
       if (lifecycleEvent && element instanceof Element) {
-          lifecycleEvents.push(provideFireLifeCycleEvent(element, lifecycle.toLowerCase(), { detail: detail }));
+          lifecycleEvents.push(fireLifeCycleEventProvider(element, lifecycle.toLowerCase(), { detail: detail }));
       }
       var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
-          var patchedChild = recursion(childNode, isSVG, eventProxy, elementProps, isDestroy);
+          var patchedChild = recursion(childNode, isSVG, lifecycle);
           return patchedChild ? acc.concat(patchedChild) : acc;
       }, []);
       if (lifecycle === DESTROY) {
@@ -308,9 +338,13 @@ Released under the MIT License.
           element.insertBefore(elm, ref);
           return elm;
       }, null);
-      glueNode[CHILDREN] = children;
-      glueNode[ELEMENT] = element;
-      return glueNode;
+      newGlueNode[CHILDREN] = children;
+      newGlueNode[ELEMENT] = element;
+      return newGlueNode;
+  }
+
+  function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds) {
+      return function (next, recursion) { return function (glueNode, isSVG, captureLifecycle) { return patcher(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds, next, recursion, glueNode, isSVG, captureLifecycle); }; };
   }
 
   function isVNode(value) {
@@ -319,8 +353,7 @@ Released under the MIT License.
           && PROPS in value
           && CHILDREN in value
           && KEY in value
-          && NAME in value
-          && 4 === Object.keys(value).length;
+          && NAME in value;
   }
 
   function x(name, props) {
@@ -341,18 +374,18 @@ Released under the MIT License.
       return createVNode(false, name, props || {}, children);
   }
 
-  function resolveChildren(next, recursion, rootContext, children, parentNode) {
+  function resolveChildren(next, recursion, children, parentNode) {
       return children.reduce(function (childs, child) {
-          childs.push.apply(childs, recursion(rootContext, child, parentNode));
+          childs.push.apply(childs, recursion(child, parentNode));
           return childs;
       }, []);
   }
-  function resolveNode(next, recursion, rootContext, node, parentNode) {
+  function resolver(getContext, setContext, next, recursion, node, parentNode) {
       if (!node) {
           return [];
       }
       if (x === node.name) { // Fragment
-          return resolveChildren(next, recursion, rootContext, node[CHILDREN], parentNode);
+          return resolveChildren(next, recursion, node[CHILDREN], parentNode);
       }
       var rawProps = node[PROPS];
       var parentProps = parentNode && parentNode[PROPS] || {};
@@ -364,20 +397,20 @@ Released under the MIT License.
               ? parentPath + "." + slice
               : (slice || parentPath);
       }
-      var sliced = path ? deepGet(rootContext, path) : rootContext;
+      var sliced = getContext(path);
       if (!sliced) {
           var fill = deepGet(rawProps, FILL) || {};
           sliced = assign({}, fill);
-          deepSet(rootContext, path, sliced);
+          setContext(sliced, path);
       }
       var context = sliced;
       var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), parentNode && deepGet(parentNode, PROPS + "." + EXTRA) || {});
       var props = remodelProps(rawProps, context, extra, path);
       var resolveds = (typeof node.name === "function"
-          ? recursion(rootContext, node.name(props, node[CHILDREN]), node)
+          ? recursion(node.name(props, node[CHILDREN]), node)
           : [node]).reduce(function (acc, resolved) {
           if (isVNode(resolved)) {
-              resolved[CHILDREN] = resolveChildren(next, recursion, rootContext, resolved[CHILDREN], resolved);
+              resolved[CHILDREN] = resolveChildren(next, recursion, resolved[CHILDREN], resolved);
               acc.push(resolved);
           }
           return acc;
@@ -385,20 +418,26 @@ Released under the MIT License.
       return resolveds;
   }
 
-  function rendererProvider(mutate /* , elementProps, context, view, glueNode */) {
+  function resolverProvider(getContext, setContext) {
+      return function (next, recursion) { return function (node, parentNode) { return resolver(getContext, setContext, next, recursion, node, parentNode); }; };
+  }
+
+  function rendererProvider(mutate, getContext, setContext /*, view, glueNode */) {
+      var elementProps = new WeakMap();
+      var elementRemoveds = new WeakMap();
+      var eventProxy = eventProxyProvider(mutate, getContext, elementProps);
       return function () {
           var destroys = [];
           var lifecycleEvents = [];
           return [
               // resolver
-              function (next, recursion) { return partial(resolveNode, [next, recursion]); },
+              resolverProvider(getContext, setContext),
               // pather
-              function (next, recursion) { return partial(patch, [mutate, destroys, lifecycleEvents, next, recursion]); },
+              patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds),
               // finallyer
-              function (next) { return function () {
+              function () { return function () {
                   lifecycleEvents.reduceRight(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
                   destroys.reduceRight(function (_, destroy) { return destroy(); }, 0);
-                  next();
               }; },
           ];
       };
@@ -444,7 +483,7 @@ Released under the MIT License.
               return mergeGlueNode(child);
           }
       });
-      indexedPrevChildren.reduceRight(function (_, child) {
+      indexedPrevChildren.map(function (child) {
           child = mergeGlueNode(undefined, child);
           if (0 === child.i) {
               children.unshift(child);
@@ -455,18 +494,17 @@ Released under the MIT License.
               for (i = 0; i < children.length; i++) {
                   if (index === children[i].i) {
                       children.splice(i + 1, 0, child);
-                      return 0;
+                      return;
                   }
               }
               children.push(child);
           }
-          return 0;
-      }, 0);
+      });
       glueNode[CHILDREN] = children;
       return glueNode;
   }
 
-  function rendering(glueNode, view, rootContext, eventProxy, elementProps, renderers) {
+  function rendering(glueNode, view, renderers) {
       var rootProps = remodelProps(glueNode[PROPS]);
       var resolverRecursion = function () {
           var args = [];
@@ -485,9 +523,9 @@ Released under the MIT License.
       };
       var patcher = renderers.map(function (v) { return v[1]; }).reduce(wrapOnion, [noop, patcherRecursion])[0];
       var finallyer = renderers.map(function (v) { return v[2]; }).reduce(wrapOnion, [noop, noop])[0];
-      var vNode = resolver(rootContext, x(view, rootProps, []))[0];
+      var vNode = resolver(x(view, rootProps, []))[0];
       var node = mergeGlueNode(vNode, glueNode);
-      glueNode = patcher(node, 'svg' === node.name, eventProxy, elementProps, false);
+      glueNode = patcher(node, 'svg' === node.name, '');
       finallyer();
       return glueNode;
   }
@@ -505,49 +543,25 @@ Released under the MIT License.
           : elementOrGlueNode;
       var rootProps = remodelProps(glueNode[PROPS]);
       var rootContext = deepGet(rootProps, CONTEXT);
-      var elementProps = new WeakMap();
       var middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || [];
+      var mutate = mutateProvider(getContext, setContext, scheduleRender);
       var rendererProviders = [rendererProvider]
           .concat(middlewares)
-          .map(function (provider) { return provider(mutate, elementProps, rootContext, view, glueNode); });
-      function mutate(context, path) {
-          if (path === void 0) { path = ''; }
-          if (context) {
-              if (context instanceof Promise) {
-                  return context.then(function (newContext) { return mutate(newContext, path); });
-              }
-              if ('function' === typeof context) {
-                  return context(mutate, rootContext);
-              }
-              if ('object' === typeof context) {
-                  var targetContext = getTargetContext(path || '');
-                  if (context === targetContext) {
-                      return;
-                  }
-                  var newContext = assign(assign({}, targetContext), context);
-                  if (path) {
-                      deepSet(rootContext, path, newContext);
-                  }
-                  else {
-                      rootContext = newContext;
-                  }
-                  scheduleRender();
-              }
-          }
-      }
-      function getTargetContext(path, def) {
+          .map(function (provider) { return provider(mutate, getContext, setContext, view, glueNode); });
+      function getContext(path, def) {
           if (def === void 0) { def = {}; }
           return (path ? deepGet(rootContext, path) : rootContext) || def;
       }
-      function eventProxy(event) {
-          var element = event.currentTarget;
-          var props = elementProps.get(element);
-          var path = deepGet(props, PATH);
-          var newContext = props["on" + event.type](getTargetContext(path), props, event);
-          mutate(newContext, path);
+      function setContext(newContext, path) {
+          if (path) {
+              deepSet(rootContext, path, newContext);
+          }
+          else {
+              rootContext = newContext;
+          }
       }
       function render() {
-          glueNode = rendering(glueNode, view, rootContext, eventProxy, elementProps, rendererProviders.map(function (provider) { return provider(rootContext); }));
+          glueNode = rendering(glueNode, view, rendererProviders.map(function (provider) { return provider(); }));
       }
       function rendered() {
           scheduled = false;
