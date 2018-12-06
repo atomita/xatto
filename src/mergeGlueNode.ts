@@ -56,7 +56,7 @@ export function mergeGlueNode(
     }
   })
 
-  indexedPrevChildren.reduceRight((_, child) => {
+  indexedPrevChildren.map((child) => {
     child = mergeGlueNode(undefined, child)
     if (0 === child.i) {
       children.unshift(child)
@@ -66,13 +66,12 @@ export function mergeGlueNode(
       for (i = 0; i < children.length; i++) {
         if (index === children[i].i) {
           children.splice(i + 1, 0, child)
-          return 0
+          return
         }
       }
       children.push(child)
     }
-    return 0
-  }, 0)
+  })
 
   glueNode[CHILDREN] = children
 
