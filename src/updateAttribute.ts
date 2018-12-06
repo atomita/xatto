@@ -9,7 +9,7 @@ export function updateAttribute(
   isSVG: Boolean,
   eventProxy: (e: Event) => void
 ) {
-  if (name === "key" || 'object' === typeof value) {
+  if ('object' === typeof value) {
     // noop
   } else {
     if (name[0] === "o" && name[1] === "n") {
