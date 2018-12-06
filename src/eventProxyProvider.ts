@@ -7,13 +7,16 @@ export function eventProxyProvider(
   getContext,
   elementProps: WeakMap<Element, Props>
 ) {
-  return (event: Event) => {
+  return (event: Event | CustomEvent) => {
     const element = event.currentTarget as Element
 
     const props = elementProps.get(element)
+
     const path = deepGet(props, PATH) as string
 
-    const newContext = props!["on" + event.type](getContext(path), props, event)
+    const detail = (event as CustomEvent).detail || {}
+
+    const newContext = props!["on" + event.type](getContext(path), detail, props, event)
 
     mutate(newContext, path)
   }
