@@ -5,6 +5,7 @@ import { resolverProvider } from "./resolverProvider";
 
 export function rendererProvider(mutate, getContext, setContext/*, view, glueNode */) {
   const elementProps = new WeakMap<Element, Props>()
+  const elementRemoveds = new WeakMap<Element, boolean>()
   const eventProxy = eventProxyProvider(mutate, getContext, elementProps)
 
   return () => {
@@ -24,7 +25,8 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
         destroys,
         lifecycleEvents,
         eventProxy,
-        elementProps
+        elementProps,
+        elementRemoveds
       ),
 
       // finallyer

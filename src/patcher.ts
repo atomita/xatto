@@ -5,10 +5,16 @@ import { GlueNode } from './GlueNode'
 import { Props } from './Props'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
+import { assign } from './assign';
 import { createElement } from './createElement'
 import { deepGet } from './deepGet'
 import { fireLifeCycleEventProvider } from './fireLifeCycleEventProvider';
 import { updateElement } from './updateElement'
+
+const shouldBeCaptureLifecycles = {}
+shouldBeCaptureLifecycles[REMOVE] = 1
+shouldBeCaptureLifecycles[REMOVING] = 2
+shouldBeCaptureLifecycles[DESTROY] = 3
 
 export function patcher(
   mutate: Function,
@@ -16,14 +22,15 @@ export function patcher(
   lifecycleEvents: Function[],
   eventProxy: (e: Event) => void,
   elementProps: WeakMap<Element, Props>,
+  elementRemoveds: WeakMap<Element, boolean>,
   next: Function,
   recursion: Function,
   glueNode: GlueNode,
   isSVG: boolean,
-  isDestroy: boolean
+  captureLifecycle: string
 ): GlueNode | null {
 
-  let patched: any | null = null
+  const newGlueNode = assign({}, glueNode)
 
   let element: Element | Node = glueNode[ELEMENT]!
 
@@ -31,49 +38,59 @@ export function patcher(
     isSVG = true
   }
 
-  if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
-    isDestroy = true
+  let rawLifecycle = glueNode[LIFECYCLE]
+
+  if (
+    rawLifecycle === REMOVING
+    && element instanceof Element
+    && elementRemoveds.has(element)
+  ) {
+    rawLifecycle = DESTROY
   }
 
-  const lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE]
+  const shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle]
+  const shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle]
+
+  const lifecycle =
+    shouldBeCaptureLifecycleByCaptured
+    && (!shouldBeCaptureLifecycle || shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured)
+    && captureLifecycle
+    || rawLifecycle
+
+  newGlueNode[LIFECYCLE] = lifecycle
 
   let lifecycleEvent
   let detail: any = null
 
   switch (lifecycle) {
     case CREATE:
+      lifecycleEvent = true
       element = createElement(glueNode, isSVG, eventProxy, elementProps)
       break
     case UPDATE:
       [element, lifecycleEvent] = updateElement(glueNode, isSVG, eventProxy, elementProps)
       break
     case DESTROY:
-      if (glueNode[LIFECYCLE] === DESTROY) {
-        destroys.push(() => element.parentElement!.removeChild(element))
-      }
+      lifecycleEvent = true
+      destroys.push(() => element.parentElement!.removeChild(element))
       break
     case REMOVE:
-      glueNode[LIFECYCLE] = REMOVING
+      lifecycleEvent = true
+      newGlueNode[LIFECYCLE] = REMOVING
       detail = {
         done: () => {
-          glueNode[LIFECYCLE] = DESTROY
+          elementRemoveds.set(element as Element, true)
           Promise.resolve({}).then(mutate as any)
         }
       }
   }
 
-  switch (lifecycle) {
-    case CREATE:
-    case DESTROY:
-    case REMOVE:
-      lifecycleEvent = true
-  }
   if (lifecycleEvent && element instanceof Element) {
     lifecycleEvents.push(fireLifeCycleEventProvider(element, lifecycle.toLowerCase(), { detail }))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-    const patchedChild = recursion(childNode, isSVG, isDestroy)
+    const patchedChild = recursion(childNode, isSVG, lifecycle)
     return patchedChild ? acc.concat(patchedChild) : acc
   }, [] as GlueNode[])
 
@@ -86,8 +103,8 @@ export function patcher(
     return elm
   }, null as any)
 
-  glueNode[CHILDREN] = children
-  glueNode[ELEMENT] = element
+  newGlueNode[CHILDREN] = children
+  newGlueNode[ELEMENT] = element
 
-  return glueNode
+  return newGlueNode
 }

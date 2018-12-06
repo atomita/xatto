@@ -33,7 +33,7 @@ export function rendering(
   glueNode = patcher(
     node,
     'svg' === node.name,
-    false
+    ''
   )
 
   finallyer()
