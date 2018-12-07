@@ -6,7 +6,6 @@ import { ResolvedVNode } from './ResolvedVNode';
 import { createGlueNode } from './createGlueNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
-import { lifeCycleEventPath } from './lifeCycleEventPath'
 
 export function mergeGlueNode(
   vNode?: ResolvedVNode,
@@ -21,7 +20,7 @@ export function mergeGlueNode(
     deepSet(glueNode, PREV_PROPS, glueNode[PROPS])
     glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
       ? glueNode[LIFECYCLE]
-      : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
+      : (deepGet(glueNode, `${PROPS}.on${REMOVE}`)
         ? REMOVE
         : DESTROY)
     return glueNode
