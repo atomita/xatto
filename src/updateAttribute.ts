@@ -14,9 +14,9 @@ export function updateAttribute(
   } else {
     if (name[0] === "o" && name[1] === "n") {
       const eventName = name.slice(2)
-      if (value == null) {
+      if (value instanceof Function) {
         element.removeEventListener(eventName, eventProxy)
-      } else if (oldValue == null) {
+      } else if (oldValue instanceof Function) {
         element.addEventListener(eventName, eventProxy)
       }
     } else {
