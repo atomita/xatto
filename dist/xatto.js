@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.4
+xatto v1.0.0-rc.5
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -182,10 +182,10 @@ Released under the MIT License.
       else {
           if (name[0] === "o" && name[1] === "n") {
               var eventName = name.slice(2);
-              if (value instanceof Function) {
+              if (!(value instanceof Function)) {
                   element.removeEventListener(eventName, eventProxy);
               }
-              else if (oldValue instanceof Function) {
+              else if (!(oldValue instanceof Function)) {
                   element.addEventListener(eventName, eventProxy);
               }
           }
