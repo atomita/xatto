@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.3
+xatto v1.0.0-rc.4
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -182,10 +182,10 @@ Released under the MIT License.
       else {
           if (name[0] === "o" && name[1] === "n") {
               var eventName = name.slice(2);
-              if (value == null) {
+              if (value instanceof Function) {
                   element.removeEventListener(eventName, eventProxy);
               }
-              else if (oldValue == null) {
+              else if (oldValue instanceof Function) {
                   element.addEventListener(eventName, eventProxy);
               }
           }
@@ -313,7 +313,9 @@ Released under the MIT License.
               break;
           case DESTROY:
               lifecycleEvent = true;
-              destroys.push(function () { return element.parentElement && element.parentElement.removeChild(element); });
+              if (rawLifecycle == DESTROY) {
+                  destroys.push(function () { return element.parentElement && element.parentElement.removeChild(element); });
+              }
               break;
           case REMOVE:
               lifecycleEvent = true;
@@ -444,8 +446,6 @@ Released under the MIT License.
       };
   }
 
-  var lifeCycleEventPath = function (name) { return PROPS + ".on" + name; };
-
   function mergeGlueNode(vNode, glueNode) {
       if (!glueNode) {
           return createGlueNode(vNode);
@@ -454,7 +454,7 @@ Released under the MIT License.
           deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
           glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
               ? glueNode[LIFECYCLE]
-              : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
+              : (deepGet(glueNode, PROPS + ".on" + REMOVE)
                   ? REMOVE
                   : DESTROY);
           return glueNode;
