@@ -1,17 +1,17 @@
-import { CONTEXT } from './consts/attributeNames'
-import { GlueNode } from './GlueNode'
-import { MIDDLEWARES } from './consts/optionNames'
-import { PROPS } from './consts/vNodeAttributeNames';
-import { Props } from './Props'
-import { VNode } from './VNode'
 import { assign } from './assign'
-import { createGlueNodeByElement } from './createGlueNodeByElement';
+import { CONTEXT } from './consts/attributeNames'
+import { MIDDLEWARES } from './consts/optionNames'
+import { PROPS } from './consts/vNodeAttributeNames'
+import { createGlueNodeByElement } from './createGlueNodeByElement'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
-import { mutateProvider } from './mutateProvider';
-import { remodelProps } from './remodelProps';
-import { rendererProvider } from './rendererProvider';
-import { rendering } from './rendering';
+import { GlueNode } from './GlueNode'
+import { mutateProvider } from './mutateProvider'
+import { Props } from './Props'
+import { remodelProps } from './remodelProps'
+import { rendererProvider } from './rendererProvider'
+import { rendering } from './rendering'
+import { VNode } from './VNode'
 import { x } from './x'
 
 /**
@@ -22,35 +22,37 @@ import { x } from './x'
  * @param  options {object} default: `{}`
  * @return {Function}
  */
-export function atto(
+export function atto (
   view: (props: Props, children: VNode[]) => VNode,
   containerOrGlueNode: Element | GlueNode,
   options: any = {}
 ) {
-
   let scheduled = false
 
-  let glueNode = containerOrGlueNode instanceof Element
-    ? createGlueNodeByElement(containerOrGlueNode)
-    : containerOrGlueNode as GlueNode
+  let glueNode =
+    containerOrGlueNode instanceof Element
+      ? createGlueNodeByElement(containerOrGlueNode)
+      : (containerOrGlueNode as GlueNode)
 
   const rootProps = remodelProps(glueNode[PROPS])
 
   let rootContext: any = deepGet(rootProps, CONTEXT)
 
-  const middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || []
+  const middlewares = (MIDDLEWARES in options && options[MIDDLEWARES]) || []
 
   const mutate = mutateProvider(getContext, setContext, scheduleRender)
 
   const rendererProviders = [rendererProvider]
     .concat(middlewares)
-    .map((provider: Function) => provider(mutate, getContext, setContext, view, glueNode))
+    .map((provider: Function) =>
+      provider(mutate, getContext, setContext, view, glueNode)
+    )
 
-  function getContext(path: string, def: any = {}) {
+  function getContext (path: string, def: any = {}) {
     return (path ? deepGet(rootContext, path) : rootContext) || def
   }
 
-  function setContext(newContext: any, path?: string) {
+  function setContext (newContext: any, path?: string) {
     if (path) {
       deepSet(rootContext, path, newContext)
     } else {
@@ -58,27 +60,29 @@ export function atto(
     }
   }
 
-  function render() {
+  function render () {
     glueNode = rendering(
       glueNode,
       view,
-      rendererProviders.map(provider => provider())
+      rendererProviders.map((provider) => provider())
     )
   }
 
-  function rendered() {
+  function rendered () {
     scheduled = false
   }
 
-  function renderedError(e) {
+  function renderedError (e) {
     rendered()
     throw e
   }
 
-  function scheduleRender() {
+  function scheduleRender () {
     if (!scheduled) {
       scheduled = true
-      Promise.resolve().then(render).then(rendered, renderedError)
+      Promise.resolve()
+        .then(render)
+        .then(rendered, renderedError)
     }
   }
 

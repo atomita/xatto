@@ -1,7 +1,7 @@
-import { assign } from "./assign";
-import { deepSet } from "./deepSet";
+import { assign } from './assign'
+import { deepSet } from './deepSet'
 
-export function mutate(
+export function mutate (
   getContext,
   setContext,
   scheduleRender,
@@ -10,7 +10,9 @@ export function mutate(
 ) {
   if (context) {
     if (context instanceof Promise) {
-      return context.then(newContext => mutate(getContext, setContext, scheduleRender, newContext, path))
+      return context.then((newContext) =>
+        mutate(getContext, setContext, scheduleRender, newContext, path)
+      )
     }
 
     if ('function' === typeof context) {

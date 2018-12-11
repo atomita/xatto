@@ -5,6 +5,19 @@
     "tslint-config-standard"
   ],
   "jsRules": {},
-  "rules": {},
+  "rules": {
+    "await-promise": false,
+    "ban-types": false,
+    "deprecation": false,
+    "interface-name": false,
+    "no-bitwise": false,
+    "no-floating-promises": false,
+    "no-unnecessary-qualifier": false,
+    "no-unnecessary-type-assertion": false,
+    "one-variable-per-declaration": false,
+    "strict-type-predicates": false,
+    "triple-equals": false
+
+  },
   "rulesDirectory": []
 }

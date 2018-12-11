@@ -1,13 +1,13 @@
-import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
-import { GlueNode } from './GlueNode'
-import { Props } from './Props'
 import { TEXT_NODE } from './consts/tagNames'
+import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
+import { GlueNode } from './GlueNode'
+import { Props } from './Props'
 import { updateAttribute } from './updateAttribute'
 
-export function createNode(
+export function createNode (
   glueNode: GlueNode,
   isSVG: Boolean,
   eventProxy: (e: Event) => void,
@@ -19,8 +19,10 @@ export function createNode(
     return document.createTextNode(deepGet(props, TEXT) as string)
   }
 
-  const node = (isSVG = isSVG || glueNode[NAME] === "svg")
-    ? document.createElementNS("http://www.w3.org/2000/svg", glueNode[NAME])
+  isSVG = isSVG || glueNode[NAME] === 'svg'
+
+  const node = isSVG
+    ? document.createElementNS('http://www.w3.org/2000/svg', glueNode[NAME])
     : document.createElement(glueNode[NAME])
 
   for (const name in props) {

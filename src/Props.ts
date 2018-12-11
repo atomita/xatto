@@ -1,5 +1,5 @@
 export interface Props {
-  [key: string]: any;
+  [key: string]: any
   xa: {
     context: any;
     extra: any;
@@ -8,5 +8,5 @@ export interface Props {
     slice?: string;
 
     text?: string;
-  };
+  }
 }

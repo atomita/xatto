@@ -1,29 +1,32 @@
-import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
-import { CONTEXT, EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
-import { Component } from './Component'
-import { Props } from './Props'
-import { ResolvedVNode } from './ResolvedVNode'
-import { VNode } from './VNode'
 import { assign } from './assign'
+import { Component } from './Component'
+import { CONTEXT, EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
+import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
+import { Props } from './Props'
 import { remodelProps } from './remodelProps'
+import { ResolvedVNode } from './ResolvedVNode'
+import { VNode } from './VNode'
 import { x } from './x'
 
-function resolveChildren(
+function resolveChildren (
   next: Function,
   recursion: Function,
   children: VNode[],
   parentNode?: VNode | ResolvedVNode
 ) {
-  return children.reduce((childs, child) => {
-    childs.push.apply(childs, recursion(child, parentNode))
-    return childs
-  }, [] as ResolvedVNode[])
+  return children.reduce(
+    (childs, child) => {
+      childs.push.apply(childs, recursion(child, parentNode))
+      return childs
+    },
+    [] as ResolvedVNode[]
+  )
 }
 
-export function resolver(
+export function resolver (
   getContext,
   setContext,
   next: Function,
@@ -35,13 +38,14 @@ export function resolver(
     return []
   }
 
-  if (x === node.name) { // Fragment
+  if (x === node.name) {
+    // Fragment
     return resolveChildren(next, recursion, node[CHILDREN], parentNode)
   }
 
   const rawProps = node[PROPS]
 
-  const parentProps = parentNode && parentNode[PROPS] || {}
+  const parentProps = (parentNode && parentNode[PROPS]) || {}
 
   let path = deepGet(rawProps, PATH) as string
 
@@ -50,9 +54,10 @@ export function resolver(
 
     const slice = deepGet(rawProps, SLICE) as string
 
-    path = (parentPath && slice)
-      ? `${parentPath}.${slice}`
-      : (slice || parentPath) as string
+    path =
+      parentPath && slice
+        ? `${parentPath}.${slice}`
+        : ((slice || parentPath) as string)
   }
 
   let sliced = getContext(path)
@@ -69,21 +74,29 @@ export function resolver(
 
   const extra = assign(
     assign({}, deepGet(rawProps, EXTRA) || {}),
-    parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`) || {}
+    (parentNode && deepGet(parentNode, `${PROPS}.${EXTRA}`)) || {}
   )
 
   const props = remodelProps(rawProps, context, extra, path)
 
-  const resolveds = (typeof node.name === "function"
+  const resolveds = (typeof node.name === 'function'
     ? recursion((node!.name as Component)(props as Props, node[CHILDREN]), node)
     : [node]
-  ).reduce((acc, resolved) => {
-    if (isVNode(resolved)) {
-      resolved![CHILDREN] = resolveChildren(next, recursion, resolved![CHILDREN], resolved)
-      acc.push(resolved as ResolvedVNode)
-    }
-    return acc
-  }, [] as ResolvedVNode[])
+  ).reduce(
+    (acc, resolved) => {
+      if (isVNode(resolved)) {
+        resolved![CHILDREN] = resolveChildren(
+          next,
+          recursion,
+          resolved![CHILDREN],
+          resolved
+        )
+        acc.push(resolved as ResolvedVNode)
+      }
+      return acc
+    },
+    [] as ResolvedVNode[]
+  )
 
   return resolveds
 }

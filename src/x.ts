@@ -1,7 +1,7 @@
 import { Component } from './Component'
-import { VNode } from './VNode'
 import { createVNode } from './createVNode'
 import { isVNode } from './isVNode'
+import { VNode } from './VNode'
 
 /**
  * x
@@ -11,7 +11,7 @@ import { isVNode } from './isVNode'
  * @param  ... {object}
  * @return {VNode}
  */
-export function x(
+export function x (
   name: string | Component | ((name, props, ...rest) => VNode),
   props: any,
   ...rest: any[]
@@ -23,7 +23,7 @@ export function x(
     if (node && Array.isArray(node)) {
       rest = rest.concat(node)
     } else if (node != null && node !== true && node !== false) {
-      children.unshift(isVNode(node) && node || createVNode(true, node))
+      children.unshift((isVNode(node) && node) || createVNode(true, node))
     }
   }
 

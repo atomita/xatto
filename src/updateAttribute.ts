@@ -1,7 +1,7 @@
-import { Props } from './Props'
 import { XLINK_NS } from './consts/namespaces'
+import { Props } from './Props'
 
-export function updateAttribute(
+export function updateAttribute (
   element: Element,
   name,
   value,
@@ -9,7 +9,7 @@ export function updateAttribute(
   isSVG: Boolean,
   eventProxy: (e: Event) => void
 ) {
-  if (name[0] === "o" && name[1] === "n") {
+  if (name[0] === 'o' && name[1] === 'n') {
     const eventName = name.slice(2)
     if (!(value instanceof Function)) {
       element.removeEventListener(eventName, eventProxy)
@@ -21,22 +21,22 @@ export function updateAttribute(
 
     if (
       name in element &&
-      name !== "list" &&
-      name !== "draggable" &&
-      name !== "spellcheck" &&
-      name !== "translate" &&
+      name !== 'list' &&
+      name !== 'draggable' &&
+      name !== 'spellcheck' &&
+      name !== 'translate' &&
       !isSVG
     ) {
       if (nullOrFalse) {
         element.removeAttribute(name)
       } else {
-        element[name] = value == null ? "" : value
+        element[name] = value == null ? '' : value
       }
     } else {
       let ns = false
       if (isSVG) {
         const originName = name
-        name = name.replace(/^xlink:?/, "")
+        name = name.replace(/^xlink:?/, '')
         ns = name !== originName
       }
 

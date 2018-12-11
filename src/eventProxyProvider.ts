@@ -1,8 +1,8 @@
-import { PATH } from "./consts/attributeNames";
-import { Props } from "./Props";
-import { deepGet } from "./deepGet";
+import { PATH } from './consts/attributeNames'
+import { deepGet } from './deepGet'
+import { Props } from './Props'
 
-export function eventProxyProvider(
+export function eventProxyProvider (
   mutate,
   getContext,
   eventTargetProps: WeakMap<EventTarget, Props>
@@ -16,7 +16,12 @@ export function eventProxyProvider(
 
     const detail = (event as CustomEvent).detail || {}
 
-    const newContext = props!["on" + event.type](getContext(path), detail, props, event)
+    const newContext = props!['on' + event.type](
+      getContext(path),
+      detail,
+      props,
+      event
+    )
 
     mutate(newContext, path)
   }

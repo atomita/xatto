@@ -1,10 +1,14 @@
-import { Props } from "./Props";
-import { eventProxyProvider } from "./eventProxyProvider";
-import { glueNodeMergerProvider } from "./glueNodeMergerProvider";
-import { patcherProvider } from "./patcherProvider";
-import { resolverProvider } from "./resolverProvider";
+import { eventProxyProvider } from './eventProxyProvider'
+import { glueNodeMergerProvider } from './glueNodeMergerProvider'
+import { patcherProvider } from './patcherProvider'
+import { Props } from './Props'
+import { resolverProvider } from './resolverProvider'
 
-export function rendererProvider(mutate, getContext, setContext/*, view, glueNode */) {
+export function rendererProvider (
+  mutate,
+  getContext,
+  setContext /*, view, glueNode */
+) {
   const eventTargetProps = new WeakMap<EventTarget, Props>()
   const removedNodes = new WeakMap<Node, boolean>()
   const eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps)
@@ -15,15 +19,10 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
 
     return [
       // resolver
-      resolverProvider(
-        getContext,
-        setContext
-      ),
+      resolverProvider(getContext, setContext),
 
       // meger
-      glueNodeMergerProvider(
-        removedNodes
-      ),
+      glueNodeMergerProvider(removedNodes),
 
       // pather
       patcherProvider(
@@ -40,7 +39,12 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
         lifecycleEvents.reduceRight((_, lifecycleEvent) => lifecycleEvent(), 0)
 
         destroys.reduceRight((_, destroy) => destroy(), 0)
-      },
-    ] as [Function | undefined, Function | undefined, Function | undefined, Function | undefined]
+      }
+    ] as [
+      Function | undefined,
+      Function | undefined,
+      Function | undefined,
+      Function | undefined
+    ]
   }
 }

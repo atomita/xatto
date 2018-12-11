@@ -7,18 +7,22 @@
  * @param {string} separator
  * @return {T}
  */
-export function deepGet<T>(target: any, key: string, separator: string = '.'): T {
+export function deepGet<T> (
+  target: any,
+  key: string,
+  separator: string = '.'
+): T {
   while (true) {
     if (target == null) {
-      return target;
+      return target
     }
 
-    const idx = key.indexOf(separator);
+    const idx = key.indexOf(separator)
     if (idx < 0) {
-      return target[key];
+      return target[key]
     }
 
-    target = target[key.slice(0, idx)];
-    key = key.slice(idx + 1);
+    target = target[key.slice(0, idx)]
+    key = key.slice(idx + 1)
   }
 }

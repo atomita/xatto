@@ -7,27 +7,32 @@
  * @param {string} separator
  * @return {boolean}
  */
-export function deepSet(target: any, key: string, value: any, separator: string = '.') {
+export function deepSet (
+  target: any,
+  key: string,
+  value: any,
+  separator: string = '.'
+) {
   while (true) {
     if ('object' !== typeof target) {
-      return false;
+      return false
     }
 
-    const idx = key.indexOf(separator);
+    const idx = key.indexOf(separator)
     if (idx < 0) {
-      target[key] = value;
-      return true;
+      target[key] = value
+      return true
     }
 
-    const current = key.slice(0, idx);
-    const nexts = key.slice(idx + 1);
+    const current = key.slice(0, idx)
+    const nexts = key.slice(idx + 1)
 
     if (null == target[current]) {
-      const next = nexts.split(separator, 1)[0];
-      target[current] = next === `${parseInt(next, 10)}` ? [] : {};
+      const next = nexts.split(separator, 1)[0]
+      target[current] = next === `${parseInt(next, 10)}` ? [] : {}
     }
 
-    target = target[current];
-    key = nexts;
+    target = target[current]
+    key = nexts
   }
 }

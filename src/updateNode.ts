@@ -1,13 +1,13 @@
-import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
 import { ELEMENT, PREV_PROPS } from './consts/glueNodeAttributeNames'
-import { Props } from './Props'
 import { TEXT_NODE } from './consts/tagNames'
-import { GlueNode } from './GlueNode'
+import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
+import { GlueNode } from './GlueNode'
+import { Props } from './Props'
 import { updateAttribute } from './updateAttribute'
 
-export function updateNode(
+export function updateNode (
   glueNode: GlueNode,
   isSVG: Boolean,
   eventProxy: (e: Event) => void,
@@ -32,14 +32,9 @@ export function updateNode(
 
   for (const name in props) {
     if (
-      (
-        'object' != typeof props[name]
-      ) && (
-        props[name] !==
-        (name === "value" || name === "checked"
-          ? node[name]
-          : prevProps[name])
-      )
+      'object' != typeof props[name] &&
+      props[name] !==
+        (name === 'value' || name === 'checked' ? node[name] : prevProps[name])
     ) {
       updateAttribute(
         node as Element,
