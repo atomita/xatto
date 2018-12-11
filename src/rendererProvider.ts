@@ -1,5 +1,6 @@
 import { Props } from "./Props";
 import { eventProxyProvider } from "./eventProxyProvider";
+import { glueNodeMergerProvider } from "./glueNodeMergerProvider";
 import { patcherProvider } from "./patcherProvider";
 import { resolverProvider } from "./resolverProvider";
 
@@ -19,6 +20,9 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
         setContext
       ),
 
+      // meger
+      glueNodeMergerProvider(),
+
       // pather
       patcherProvider(
         mutate,
@@ -35,7 +39,6 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
 
         destroys.reduceRight((_, destroy) => destroy(), 0)
       },
-    ] as [Function | undefined, Function | undefined, Function | undefined]
+    ] as [Function | undefined, Function | undefined, Function | undefined, Function | undefined]
   }
 }
-

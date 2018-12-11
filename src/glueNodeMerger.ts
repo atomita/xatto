@@ -7,7 +7,9 @@ import { createGlueNode } from './createGlueNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 
-export function mergeGlueNode(
+export function glueNodeMerger(
+  next: Function,
+  recursion: Function,
   vNode?: ResolvedVNode,
   glueNode?: GlueNode
 ): GlueNode {
@@ -49,14 +51,14 @@ export function mergeGlueNode(
     }
     if (prevChild) {
       indexedPrevChildren.splice(i, 1)
-      return mergeGlueNode(child, prevChild)
+      return recursion(child, prevChild)
     } else {
-      return mergeGlueNode(child)
+      return recursion(child)
     }
   })
 
   indexedPrevChildren.map((child) => {
-    child = mergeGlueNode(undefined, child)
+    child = recursion(undefined, child)
     if (0 === child.i) {
       children.unshift(child)
     } else {

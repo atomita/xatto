@@ -1,8 +1,7 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
-import { mergeGlueNode } from './mergeGlueNode';
+import { assign } from './assign';
 import { remodelProps } from './remodelProps';
 import { x } from './x'
-import { assign } from './assign';
 
 export function rendering(
   glueNode,
@@ -15,13 +14,19 @@ export function rendering(
     wrapOnion,
     [noop, resolverRecursion])
 
+  const glueNodeMergerRecursion = (...args) => glueNodeMerger.apply(null, args)
+
+  const [glueNodeMerger] = renderers.map(v => v[1]).reduce(
+    wrapOnion,
+    [noop, glueNodeMergerRecursion])
+
   const patcherRecursion = (...args) => patcher.apply(null, args)
 
-  const [patcher] = renderers.map(v => v[1]).reduce(
+  const [patcher] = renderers.map(v => v[2]).reduce(
     wrapOnion,
     [noop, patcherRecursion])
 
-  const [finallyer] = renderers.map(v => v[2]).reduce(
+  const [finallyer] = renderers.map(v => v[3]).reduce(
     wrapOnion,
     [noop, noop])
 
@@ -30,7 +35,7 @@ export function rendering(
   const container = assign({}, glueNode)
   container[CHILDREN] = vNodes
 
-  const node = mergeGlueNode(container, glueNode)
+  const node = glueNodeMerger(container, glueNode)
 
   glueNode = patcher(
     node,
