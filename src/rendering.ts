@@ -1,4 +1,5 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
+import { UPDATE } from './consts/lifecycleNames';
 import { assign } from './assign';
 import { remodelProps } from './remodelProps';
 import { x } from './x'
@@ -35,12 +36,11 @@ export function rendering(
   const container = assign({}, glueNode)
   container[CHILDREN] = vNodes
 
-  const node = glueNodeMerger(container, glueNode)
+  const node = glueNodeMerger(UPDATE, container, glueNode)
 
   glueNode = patcher(
     node,
-    'svg' === node.name,
-    ''
+    'svg' === node.name
   )
 
   finallyer()

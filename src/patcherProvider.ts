@@ -15,8 +15,7 @@ export function patcherProvider(
     recursion: Function
   ) => (
     glueNode: GlueNode,
-    isSVG: boolean,
-    captureLifecycle: string
+    isSVG: boolean
   ) => patcher(
     mutate,
     destroys,
@@ -27,7 +26,6 @@ export function patcherProvider(
     next,
     recursion,
     glueNode,
-    isSVG,
-    captureLifecycle
+    isSVG
   )
 }

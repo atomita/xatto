@@ -8,12 +8,14 @@ import { assign } from './assign'
 import { deepSet } from './deepSet'
 
 export function createGlueNode(
-  vNode: ResolvedVNode
+  vNode: ResolvedVNode,
+  next: Function,
+  recursion: Function
 ): GlueNode {
   const newGlueNode = assign({}, vNode)
   newGlueNode.i = 0
   newGlueNode[LIFECYCLE] = CREATE
-  newGlueNode[CHILDREN] = vNode[CHILDREN].map(child => createGlueNode(child))
+  newGlueNode[CHILDREN] = vNode[CHILDREN].map(child => recursion(CREATE, child))
   deepSet(newGlueNode, PREV_PROPS, {})
   return newGlueNode as GlueNode
 }

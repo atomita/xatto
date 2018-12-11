@@ -9,12 +9,11 @@ shouldBeCaptureLifecycles[REMOVE] = 1
 shouldBeCaptureLifecycles[DESTROY] = 2
 
 export function resolveLifecycle(
-  glueNode: GlueNode,
+  rawLifecycle: string,
   captureLifecycle: string,
+  glueNode: GlueNode,
   removedNodes: WeakMap<Node, boolean>
 ) {
-  const rawLifecycle = glueNode[LIFECYCLE]
-
   const shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle]
   const shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle]
 
@@ -34,5 +33,5 @@ export function resolveLifecycle(
       : REMOVE
   }
 
-  return rawLifecycle
+  return lifecycle
 }

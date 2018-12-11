@@ -21,7 +21,9 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
       ),
 
       // meger
-      glueNodeMergerProvider(),
+      glueNodeMergerProvider(
+        removedNodes
+      ),
 
       // pather
       patcherProvider(

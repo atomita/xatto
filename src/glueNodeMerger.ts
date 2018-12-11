@@ -1,26 +1,38 @@
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
-import { CREATE, REMOVE, UPDATE } from './consts/lifecycleNames'
+import { CREATE, REMOVE, UPDATE, DESTROY } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { GlueNode } from './GlueNode';
 import { ResolvedVNode } from './ResolvedVNode';
 import { createGlueNode } from './createGlueNode'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
+import { resolveLifecycle } from './resolveLifecycle';
 
 export function glueNodeMerger(
+  removedNodes: WeakMap<Node, boolean>,
   next: Function,
   recursion: Function,
+  captureLifecycle: string,
   vNode?: ResolvedVNode,
   glueNode?: GlueNode
 ): GlueNode {
 
   if (!glueNode) {
-    return createGlueNode(vNode!)
+    return createGlueNode(vNode!, next, recursion)
   }
 
   if (!vNode) {
     deepSet(glueNode, PREV_PROPS, glueNode[PROPS])
-    glueNode[LIFECYCLE] = REMOVE
+
+    const lifecycle = resolveLifecycle(
+      REMOVE != captureLifecycle && DESTROY != captureLifecycle ? REMOVE : UPDATE,
+      captureLifecycle,
+      glueNode,
+      removedNodes
+    )
+
+    glueNode[LIFECYCLE] = lifecycle
+    glueNode[CHILDREN] = glueNode[CHILDREN].map(child => recursion(lifecycle, null, child))
     return glueNode
   }
 
@@ -47,14 +59,14 @@ export function glueNodeMerger(
     }
     if (prevChild) {
       indexedPrevChildren.splice(i, 1)
-      return recursion(child, prevChild)
+      return recursion(UPDATE, child, prevChild)
     } else {
-      return recursion(child)
+      return recursion(UPDATE, child)
     }
   })
 
   indexedPrevChildren.map((child) => {
-    child = recursion(undefined, child)
+    child = recursion(UPDATE, null, child)
     if (0 === child.i) {
       children.unshift(child)
     } else {

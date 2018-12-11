@@ -22,8 +22,7 @@ export function patcher(
   next: Function,
   recursion: Function,
   glueNode: GlueNode,
-  isSVG: boolean,
-  captureLifecycle: string
+  isSVG: boolean
 ): GlueNode | null {
 
   const newGlueNode = assign({}, glueNode)
@@ -34,9 +33,7 @@ export function patcher(
     isSVG = true
   }
 
-  const lifecycle = resolveLifecycle(glueNode, captureLifecycle, removedNodes)
-
-  newGlueNode[LIFECYCLE] = lifecycle
+  const lifecycle = newGlueNode[LIFECYCLE]!
 
   let lifecycleEvent
   let detail: any = null
@@ -70,11 +67,11 @@ export function patcher(
   }
 
   if (lifecycleEvent) {
-    lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle!, { detail }))
+    lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle, { detail }))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
-    const patchedChild = recursion(childNode, isSVG, lifecycle)
+    const patchedChild = recursion(childNode, isSVG)
     return patchedChild ? acc.concat(patchedChild) : acc
   }, [] as GlueNode[])
 
