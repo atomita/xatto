@@ -32,10 +32,14 @@ export function updateNode(
 
   for (const name in props) {
     if (
-      props[name] !==
-      (name === "value" || name === "checked"
-        ? node[name]
-        : prevProps[name])
+      (
+        'object' != typeof props[name]
+      ) && (
+        props[name] !==
+        (name === "value" || name === "checked"
+          ? node[name]
+          : prevProps[name])
+      )
     ) {
       updateAttribute(
         node as Element,

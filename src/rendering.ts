@@ -1,6 +1,7 @@
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames';
 import { UPDATE } from './consts/lifecycleNames';
 import { assign } from './assign';
+import { noop } from './noop';
 import { remodelProps } from './remodelProps';
 import { x } from './x'
 
@@ -51,5 +52,3 @@ export function rendering(
 function wrapOnion([next, recursion], stack) {
   return [stack ? stack(next, recursion) : next, recursion]
 }
-
-function noop() { }

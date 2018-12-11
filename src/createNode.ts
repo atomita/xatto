@@ -24,7 +24,9 @@ export function createNode(
     : document.createElement(glueNode[NAME])
 
   for (const name in props) {
-    updateAttribute(node, name, props[name], null, isSVG, eventProxy)
+    if ('object' != typeof props[name]) {
+      updateAttribute(node, name, props[name], null, isSVG, eventProxy)
+    }
   }
 
   eventTargetProps.set(node, props)
