@@ -73,7 +73,10 @@ export function patcher(
     case DESTROY:
       lifecycleEvent = true
       if (rawLifecycle == DESTROY) {
-        destroys.push(() => element.parentElement && element.parentElement.removeChild(element))
+        destroys.push(() => {
+          const parent = element.parentElement || element.parentNode
+          parent && parent.removeChild(element)
+        })
       }
       break
     case REMOVE:
