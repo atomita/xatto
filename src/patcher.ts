@@ -67,7 +67,7 @@ export function patcher(
   }
 
   if (lifecycleEvent) {
-    lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle, { detail }))
+    lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle, detail))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
