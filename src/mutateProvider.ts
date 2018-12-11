@@ -7,7 +7,7 @@ export function mutateProvider(
 ) {
   return (
     context,
-    path
+    path = ''
   ) => mutate(
     getContext,
     setContext,

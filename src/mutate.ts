@@ -6,11 +6,11 @@ export function mutate(
   setContext,
   scheduleRender,
   context: any,
-  path: string = ''
+  path: string
 ) {
   if (context) {
     if (context instanceof Promise) {
-      return context.then(newContext => mutate(getContext, setContext, newContext, path))
+      return context.then(newContext => mutate(getContext, setContext, scheduleRender, newContext, path))
     }
 
     if ('function' === typeof context) {
