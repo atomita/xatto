@@ -16,15 +16,15 @@ import { x } from './x'
 
 export function atto(
   view: (props: Props, children: VNode[]) => VNode,
-  elementOrGlueNode: Element | GlueNode,
+  containerOrGlueNode: Element | GlueNode,
   options: any = {}
 ) {
 
   let scheduled = false
 
-  let glueNode = elementOrGlueNode instanceof Element
-    ? createGlueNodeByElement(elementOrGlueNode)
-    : elementOrGlueNode as GlueNode
+  let glueNode = containerOrGlueNode instanceof Element
+    ? createGlueNodeByElement(containerOrGlueNode)
+    : containerOrGlueNode as GlueNode
 
   const rootProps = remodelProps(glueNode[PROPS])
 
