@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.5
+xatto v1.0.0-rc.6
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -131,10 +131,9 @@ Released under the MIT License.
   }
 
   function mutate(getContext, setContext, scheduleRender, context, path) {
-      if (path === void 0) { path = ''; }
       if (context) {
           if (context instanceof Promise) {
-              return context.then(function (newContext) { return mutate(getContext, setContext, newContext, path); });
+              return context.then(function (newContext) { return mutate(getContext, setContext, scheduleRender, newContext, path); });
           }
           if ('function' === typeof context) {
               return context(mutate, getContext);
@@ -152,7 +151,10 @@ Released under the MIT License.
   }
 
   function mutateProvider(getContext, setContext, scheduleRender) {
-      return function (context, path) { return mutate(getContext, setContext, scheduleRender, context, path); };
+      return function (context, path) {
+          if (path === void 0) { path = ''; }
+          return mutate(getContext, setContext, scheduleRender, context, path);
+      };
   }
 
   function remodelProps(props, context, extra, path) {
@@ -506,7 +508,6 @@ Released under the MIT License.
   }
 
   function rendering(glueNode, view, renderers) {
-      var rootProps = remodelProps(glueNode[PROPS]);
       var resolverRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -524,8 +525,10 @@ Released under the MIT License.
       };
       var patcher = renderers.map(function (v) { return v[1]; }).reduce(wrapOnion, [noop, patcherRecursion])[0];
       var finallyer = renderers.map(function (v) { return v[2]; }).reduce(wrapOnion, [noop, noop])[0];
-      var vNode = resolver(x(view, rootProps, []))[0];
-      var node = mergeGlueNode(vNode, glueNode);
+      var vNodes = resolver(x(view, {}, []));
+      var container = assign({}, glueNode);
+      container[CHILDREN] = vNodes;
+      var node = mergeGlueNode(container, glueNode);
       glueNode = patcher(node, 'svg' === node.name, '');
       finallyer();
       return glueNode;
@@ -536,12 +539,12 @@ Released under the MIT License.
   }
   function noop() { }
 
-  function atto(view, elementOrGlueNode, options) {
+  function atto(view, containerOrGlueNode, options) {
       if (options === void 0) { options = {}; }
       var scheduled = false;
-      var glueNode = elementOrGlueNode instanceof Element
-          ? createGlueNodeByElement(elementOrGlueNode)
-          : elementOrGlueNode;
+      var glueNode = containerOrGlueNode instanceof Element
+          ? createGlueNodeByElement(containerOrGlueNode)
+          : containerOrGlueNode;
       var rootProps = remodelProps(glueNode[PROPS]);
       var rootContext = deepGet(rootProps, CONTEXT);
       var middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || [];
