@@ -7,27 +7,27 @@ import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { updateAttribute } from './updateAttribute'
 
-export function createElement(
-  node: GlueNode,
+export function createNode(
+  glueNode: GlueNode,
   isSVG: Boolean,
   eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>
+  eventTargetProps: WeakMap<EventTarget, Props>
 ): Element | Node {
-  const props = node[PROPS] || {}
+  const props = glueNode[PROPS] || {}
 
-  if (node[NAME] === TEXT_NODE) {
+  if (glueNode[NAME] === TEXT_NODE) {
     return document.createTextNode(deepGet(props, TEXT) as string)
   }
 
-  const element = (isSVG = isSVG || node[NAME] === "svg")
-    ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
-    : document.createElement(node[NAME])
+  const node = (isSVG = isSVG || glueNode[NAME] === "svg")
+    ? document.createElementNS("http://www.w3.org/2000/svg", glueNode[NAME])
+    : document.createElement(glueNode[NAME])
 
   for (const name in props) {
-    updateAttribute(element, name, props[name], null, isSVG, eventProxy)
+    updateAttribute(node, name, props[name], null, isSVG, eventProxy)
   }
 
-  elementProps.set(element, props)
+  eventTargetProps.set(node, props)
 
-  return element
+  return node
 }

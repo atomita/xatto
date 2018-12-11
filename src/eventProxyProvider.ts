@@ -5,14 +5,14 @@ import { deepGet } from "./deepGet";
 export function eventProxyProvider(
   mutate,
   getContext,
-  elementProps: WeakMap<Element, Props>
+  eventTargetProps: WeakMap<EventTarget, Props>
 ) {
   return (event: Event | CustomEvent) => {
-    const element = event.currentTarget as Element
+    const node = event.currentTarget!
 
-    const props = elementProps.get(element)
+    const props = eventTargetProps.get(node) || {}
 
-    const path = deepGet(props, PATH) as string
+    const path = deepGet(props, PATH) || ''
 
     const detail = (event as CustomEvent).detail || {}
 

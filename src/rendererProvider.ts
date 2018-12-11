@@ -5,9 +5,9 @@ import { patcherProvider } from "./patcherProvider";
 import { resolverProvider } from "./resolverProvider";
 
 export function rendererProvider(mutate, getContext, setContext/*, view, glueNode */) {
-  const elementProps = new WeakMap<Element, Props>()
-  const elementRemoveds = new WeakMap<Element, boolean>()
-  const eventProxy = eventProxyProvider(mutate, getContext, elementProps)
+  const eventTargetProps = new WeakMap<EventTarget, Props>()
+  const removedNodes = new WeakMap<Node, boolean>()
+  const eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps)
 
   return () => {
     const destroys: Function[] = []
@@ -29,8 +29,8 @@ export function rendererProvider(mutate, getContext, setContext/*, view, glueNod
         destroys,
         lifecycleEvents,
         eventProxy,
-        elementProps,
-        elementRemoveds
+        eventTargetProps,
+        removedNodes
       ),
 
       // finallyer

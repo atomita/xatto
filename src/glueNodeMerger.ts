@@ -1,5 +1,5 @@
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
-import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
+import { CREATE, REMOVE, UPDATE } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { GlueNode } from './GlueNode';
 import { ResolvedVNode } from './ResolvedVNode';
@@ -20,11 +20,7 @@ export function glueNodeMerger(
 
   if (!vNode) {
     deepSet(glueNode, PREV_PROPS, glueNode[PROPS])
-    glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
-      ? glueNode[LIFECYCLE]
-      : (deepGet(glueNode, `${PROPS}.on${REMOVE}`)
-        ? REMOVE
-        : DESTROY)
+    glueNode[LIFECYCLE] = REMOVE
     return glueNode
   }
 

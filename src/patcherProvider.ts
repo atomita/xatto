@@ -7,8 +7,8 @@ export function patcherProvider(
   destroys: Function[],
   lifecycleEvents: Function[],
   eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>,
-  elementRemoveds: WeakMap<Element, boolean>
+  eventTargetProps: WeakMap<EventTarget, Props>,
+  removedNodes: WeakMap<Node, boolean>
 ) {
   return (
     next: Function,
@@ -22,8 +22,8 @@ export function patcherProvider(
     destroys,
     lifecycleEvents,
     eventProxy,
-    elementProps,
-    elementRemoveds,
+    eventTargetProps,
+    removedNodes,
     next,
     recursion,
     glueNode,

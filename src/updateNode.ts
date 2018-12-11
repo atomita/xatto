@@ -7,38 +7,38 @@ import { GlueNode } from './GlueNode'
 import { deepGet } from './deepGet'
 import { updateAttribute } from './updateAttribute'
 
-export function updateElement(
-  node: GlueNode,
+export function updateNode(
+  glueNode: GlueNode,
   isSVG: Boolean,
   eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>
-): [Element | Node, boolean] {
-  const element: Element | Node = node[ELEMENT]!
-  const props = node[PROPS]
-  const prevProps = deepGet(node, PREV_PROPS) || {}
+  eventTargetProps: WeakMap<EventTarget, Props>
+): [Node, boolean] {
+  const node = glueNode[ELEMENT]!
+  const props = glueNode[PROPS]
+  const prevProps = deepGet(glueNode, PREV_PROPS) || {}
 
   let updated = false
 
-  if (node[NAME] === TEXT_NODE) {
+  if (glueNode[NAME] === TEXT_NODE) {
     const value = deepGet(props, TEXT) as string
     const oldValue = deepGet(prevProps, TEXT) as string
 
     updated = value != oldValue
     if (updated) {
-      element.nodeValue = deepGet(props, TEXT) as string
+      node.nodeValue = deepGet(props, TEXT) as string
     }
-    return [element as Node, updated]
+    return [node, updated]
   }
 
   for (const name in props) {
     if (
       props[name] !==
       (name === "value" || name === "checked"
-        ? element[name]
+        ? node[name]
         : prevProps[name])
     ) {
       updateAttribute(
-        element as Element,
+        node as Element,
         name,
         props[name],
         prevProps[name],
@@ -49,7 +49,7 @@ export function updateElement(
     }
   }
 
-  elementProps.set(element as Element, props)
+  eventTargetProps.set(node, props)
 
-  return [element as Element, updated]
+  return [node, updated]
 }

@@ -1,28 +1,24 @@
 import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
-import { CREATE, DESTROY, REMOVE, REMOVING, UPDATE } from './consts/lifecycleNames'
+import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
 import { ELEMENT, LIFECYCLE, PREV } from './consts/glueNodeAttributeNames'
 import { GlueNode } from './GlueNode'
 import { Props } from './Props'
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { assign } from './assign';
-import { createElement } from './createElement'
+import { createNode } from './createNode'
 import { deepGet } from './deepGet'
 import { fireLifeCycleEventProvider } from './fireLifeCycleEventProvider';
-import { updateElement } from './updateElement'
-
-const shouldBeCaptureLifecycles = {}
-shouldBeCaptureLifecycles[REMOVE] = 1
-shouldBeCaptureLifecycles[REMOVING] = 2
-shouldBeCaptureLifecycles[DESTROY] = 3
+import { resolveLifecycle } from './resolveLifecycle'
+import { updateNode } from './updateNode'
 
 export function patcher(
   mutate: Function,
   destroys: Function[],
   lifecycleEvents: Function[],
   eventProxy: (e: Event) => void,
-  elementProps: WeakMap<Element, Props>,
-  elementRemoveds: WeakMap<Element, boolean>,
+  eventTargetProps: WeakMap<EventTarget, Props>,
+  removedNodes: WeakMap<Node, boolean>,
   next: Function,
   recursion: Function,
   glueNode: GlueNode,
@@ -32,30 +28,13 @@ export function patcher(
 
   const newGlueNode = assign({}, glueNode)
 
-  let element: Element | Node = glueNode[ELEMENT]!
+  let node: Node = glueNode[ELEMENT]!
 
   if (!isSVG && glueNode[NAME] === 'svg') {
     isSVG = true
   }
 
-  let rawLifecycle = glueNode[LIFECYCLE]
-
-  if (
-    rawLifecycle === REMOVING
-    && element instanceof Element
-    && elementRemoveds.has(element)
-  ) {
-    rawLifecycle = DESTROY
-  }
-
-  const shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle]
-  const shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle]
-
-  const lifecycle =
-    shouldBeCaptureLifecycleByCaptured
-    && (!shouldBeCaptureLifecycle || shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured)
-    && captureLifecycle
-    || rawLifecycle
+  const lifecycle = resolveLifecycle(glueNode, captureLifecycle, removedNodes)
 
   newGlueNode[LIFECYCLE] = lifecycle
 
@@ -65,33 +44,33 @@ export function patcher(
   switch (lifecycle) {
     case CREATE:
       lifecycleEvent = true
-      element = createElement(glueNode, isSVG, eventProxy, elementProps)
+      node = createNode(glueNode, isSVG, eventProxy, eventTargetProps)
       break
     case UPDATE:
-      [element, lifecycleEvent] = updateElement(glueNode, isSVG, eventProxy, elementProps)
+      [node, lifecycleEvent] = updateNode(glueNode, isSVG, eventProxy, eventTargetProps)
       break
     case DESTROY:
       lifecycleEvent = true
-      if (rawLifecycle == DESTROY) {
-        destroys.push(() => {
-          const parent = element.parentElement || element.parentNode
-          parent && parent.removeChild(element)
-        })
-      }
+      destroys.push(() => {
+        const parent = node.parentElement || node.parentNode
+        parent && parent.removeChild(node)
+      })
       break
     case REMOVE:
-      lifecycleEvent = true
-      newGlueNode[LIFECYCLE] = REMOVING
-      detail = {
-        done: () => {
-          elementRemoveds.set(element as Element, true)
-          Promise.resolve({}).then(mutate as any)
+      if (!removedNodes.has(node)) {
+        removedNodes.set(node, false)
+        lifecycleEvent = true
+        detail = {
+          done: () => {
+            removedNodes.set(node, true)
+            Promise.resolve({}).then(mutate as any)
+          }
         }
       }
   }
 
-  if (lifecycleEvent && element instanceof Element) {
-    lifecycleEvents.push(fireLifeCycleEventProvider(element, lifecycle.toLowerCase(), { detail }))
+  if (lifecycleEvent) {
+    lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle!, { detail }))
   }
 
   const children = glueNode[CHILDREN].reduce((acc, childNode) => {
@@ -103,13 +82,13 @@ export function patcher(
     return null
   }
 
-  children.map(v => v.element!).reduceRight((ref, elm) => {
-    element.insertBefore(elm, ref)
+  children.map(v => v[ELEMENT]!).reduceRight((ref, elm) => {
+    node.insertBefore(elm, ref)
     return elm
   }, null as any)
 
   newGlueNode[CHILDREN] = children
-  newGlueNode[ELEMENT] = element
+  newGlueNode[ELEMENT] = node
 
   return newGlueNode
 }
