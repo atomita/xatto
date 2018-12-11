@@ -1,3 +1,3 @@
 export { atto } from './atto';
-export { currentOnlyEventHandler } from './currentOnlyEventHandler';
+export { currentOnly } from './currentOnly';
 export { x } from './x';

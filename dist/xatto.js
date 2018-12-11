@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.6
+xatto v1.0.0-rc.7
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -31,7 +31,6 @@ Released under the MIT License.
   var CREATE = 'create';
   var DESTROY = 'destroy';
   var REMOVE = 'remove';
-  var REMOVING = 'removing';
   var UPDATE = 'update';
 
   function assign(target, source) {
@@ -74,11 +73,11 @@ Released under the MIT License.
       }
   }
 
-  function createGlueNode(vNode) {
+  function createGlueNode(vNode, next, recursion) {
       var newGlueNode = assign({}, vNode);
       newGlueNode.i = 0;
       newGlueNode[LIFECYCLE] = CREATE;
-      newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return createGlueNode(child); });
+      newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return recursion(CREATE, child); });
       deepSet(newGlueNode, PREV_PROPS, {});
       return newGlueNode;
   }
@@ -100,8 +99,10 @@ Released under the MIT License.
       return node;
   }
 
+  function noop() { }
+
   function createGlueNodeByElement(element) {
-      var node = createGlueNode(createVNode(false, element.nodeName));
+      var node = createGlueNode(createVNode(false, element.nodeName), noop, noop);
       node[ELEMENT] = element;
       return node;
   }
@@ -164,192 +165,260 @@ Released under the MIT License.
       return props;
   }
 
-  function eventProxyProvider(mutate, getContext, elementProps) {
+  function eventProxyProvider(mutate, getContext, eventTargetProps) {
       return function (event) {
-          var element = event.currentTarget;
-          var props = elementProps.get(element);
-          var path = deepGet(props, PATH);
+          var node = event.currentTarget;
+          var props = eventTargetProps.get(node) || {};
+          var path = deepGet(props, PATH) || '';
           var detail = event.detail || {};
           var newContext = props["on" + event.type](getContext(path), detail, props, event);
           mutate(newContext, path);
       };
   }
 
-  var XLINK_NS = "http://www.w3.org/1999/xlink";
-
-  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
-      if ('object' === typeof value) {
-          // noop
-      }
-      else {
-          if (name[0] === "o" && name[1] === "n") {
-              var eventName = name.slice(2);
-              if (!(value instanceof Function)) {
-                  element.removeEventListener(eventName, eventProxy);
-              }
-              else if (!(oldValue instanceof Function)) {
-                  element.addEventListener(eventName, eventProxy);
-              }
-          }
-          else {
-              var nullOrFalse = value == null || value === false;
-              if (name in element &&
-                  name !== "list" &&
-                  name !== "draggable" &&
-                  name !== "spellcheck" &&
-                  name !== "translate" &&
-                  !isSVG) {
-                  if (nullOrFalse) {
-                      element.removeAttribute(name);
-                  }
-                  else {
-                      element[name] = value == null ? "" : value;
-                  }
-              }
-              else {
-                  var ns = false;
-                  if (isSVG) {
-                      var originName = name;
-                      name = name.replace(/^xlink:?/, "");
-                      ns = name !== originName;
-                  }
-                  switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
-                      case 0:
-                          element.setAttribute(name, value);
-                          break;
-                      case 1:
-                          element.removeAttribute(name);
-                          break;
-                      case 2:
-                          element.setAttributeNS(XLINK_NS, name, value);
-                          break;
-                      case 3:
-                          element.removeAttributeNS(XLINK_NS, name);
-                  }
-              }
-          }
-      }
-  }
-
-  function createElement(node, isSVG, eventProxy, elementProps) {
-      var props = node[PROPS] || {};
-      if (node[NAME] === TEXT_NODE) {
-          return document.createTextNode(deepGet(props, TEXT));
-      }
-      var element = (isSVG = isSVG || node[NAME] === "svg")
-          ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
-          : document.createElement(node[NAME]);
-      for (var name_1 in props) {
-          updateAttribute(element, name_1, props[name_1], null, isSVG, eventProxy);
-      }
-      elementProps.set(element, props);
-      return element;
-  }
-
-  function fireLifeCycleEventProvider(elm, eventName, option) {
-      if (option === void 0) { option = {}; }
-      var event = new CustomEvent(eventName, option);
-      return function () { return elm.dispatchEvent(event); };
-  }
-
-  function updateElement(node, isSVG, eventProxy, elementProps) {
-      var element = node[ELEMENT];
-      var props = node[PROPS];
-      var prevProps = deepGet(node, PREV_PROPS) || {};
-      var updated = false;
-      if (node[NAME] === TEXT_NODE) {
-          var value = deepGet(props, TEXT);
-          var oldValue = deepGet(prevProps, TEXT);
-          updated = value != oldValue;
-          if (updated) {
-              element.nodeValue = deepGet(props, TEXT);
-          }
-          return [element, updated];
-      }
-      for (var name_1 in props) {
-          if (props[name_1] !==
-              (name_1 === "value" || name_1 === "checked"
-                  ? element[name_1]
-                  : prevProps[name_1])) {
-              updateAttribute(element, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
-              updated = true;
-          }
-      }
-      elementProps.set(element, props);
-      return [element, updated];
-  }
-
   var shouldBeCaptureLifecycles = {};
   shouldBeCaptureLifecycles[REMOVE] = 1;
-  shouldBeCaptureLifecycles[REMOVING] = 2;
-  shouldBeCaptureLifecycles[DESTROY] = 3;
-  function patcher(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds, next, recursion, glueNode, isSVG, captureLifecycle) {
-      var _a;
-      var newGlueNode = assign({}, glueNode);
-      var element = glueNode[ELEMENT];
-      if (!isSVG && glueNode[NAME] === 'svg') {
-          isSVG = true;
-      }
-      var rawLifecycle = glueNode[LIFECYCLE];
-      if (rawLifecycle === REMOVING
-          && element instanceof Element
-          && elementRemoveds.has(element)) {
-          rawLifecycle = DESTROY;
-      }
+  shouldBeCaptureLifecycles[DESTROY] = 2;
+  function resolveLifecycle(rawLifecycle, captureLifecycle, glueNode, removedNodes) {
       var shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle];
       var shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle];
       var lifecycle = shouldBeCaptureLifecycleByCaptured
           && (!shouldBeCaptureLifecycle || shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured)
           && captureLifecycle
           || rawLifecycle;
-      newGlueNode[LIFECYCLE] = lifecycle;
+      if (REMOVE == lifecycle) {
+          var node = glueNode[ELEMENT];
+          return (removedNodes.get(node) ||
+              (REMOVE == rawLifecycle && !deepGet(glueNode, PROPS + ".on" + REMOVE)))
+              ? DESTROY
+              : REMOVE;
+      }
+      return lifecycle;
+  }
+
+  function glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode) {
+      if (!glueNode) {
+          return createGlueNode(vNode, next, recursion);
+      }
+      if (!vNode) {
+          deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
+          var lifecycle_1 = resolveLifecycle(REMOVE != captureLifecycle && DESTROY != captureLifecycle ? REMOVE : UPDATE, captureLifecycle, glueNode, removedNodes);
+          glueNode[LIFECYCLE] = lifecycle_1;
+          glueNode[CHILDREN] = glueNode[CHILDREN].map(function (child) { return recursion(lifecycle_1, null, child); });
+          return glueNode;
+      }
+      deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
+      glueNode[PROPS] = vNode[PROPS];
+      glueNode[KEY] = vNode[KEY];
+      glueNode[NAME] = vNode[NAME];
+      glueNode[LIFECYCLE] = UPDATE;
+      var indexedPrevChildren = glueNode[CHILDREN].map(function (child, i) { return (child.i = i, child); });
+      var children = vNode[CHILDREN].map(function (child) {
+          var prevChild, _prevChild, i;
+          for (i = 0; i < indexedPrevChildren.length; i++) {
+              _prevChild = indexedPrevChildren[i];
+              if (child[NAME] == _prevChild[NAME]
+                  && child[KEY] == _prevChild[KEY]
+                  && (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
+                  prevChild = _prevChild;
+                  break;
+              }
+          }
+          if (prevChild) {
+              indexedPrevChildren.splice(i, 1);
+              return recursion(UPDATE, child, prevChild);
+          }
+          else {
+              return recursion(UPDATE, child);
+          }
+      });
+      indexedPrevChildren.map(function (child) {
+          child = recursion(UPDATE, null, child);
+          if (0 === child.i) {
+              children.unshift(child);
+          }
+          else {
+              var index = child.i - 1;
+              var i = void 0;
+              for (i = 0; i < children.length; i++) {
+                  if (index === children[i].i) {
+                      children.splice(i + 1, 0, child);
+                      return;
+                  }
+              }
+              children.push(child);
+          }
+      });
+      glueNode[CHILDREN] = children;
+      return glueNode;
+  }
+
+  function glueNodeMergerProvider(removedNodes) {
+      return function (next, recursion) { return function (captureLifecycle, vNode, glueNode) { return glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode); }; };
+  }
+
+  var XLINK_NS = "http://www.w3.org/1999/xlink";
+
+  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
+      if (name[0] === "o" && name[1] === "n") {
+          var eventName = name.slice(2);
+          if (!(value instanceof Function)) {
+              element.removeEventListener(eventName, eventProxy);
+          }
+          else if (!(oldValue instanceof Function)) {
+              element.addEventListener(eventName, eventProxy);
+          }
+      }
+      else {
+          var nullOrFalse = value == null || value === false;
+          if (name in element &&
+              name !== "list" &&
+              name !== "draggable" &&
+              name !== "spellcheck" &&
+              name !== "translate" &&
+              !isSVG) {
+              if (nullOrFalse) {
+                  element.removeAttribute(name);
+              }
+              else {
+                  element[name] = value == null ? "" : value;
+              }
+          }
+          else {
+              var ns = false;
+              if (isSVG) {
+                  var originName = name;
+                  name = name.replace(/^xlink:?/, "");
+                  ns = name !== originName;
+              }
+              switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
+                  case 0:
+                      element.setAttribute(name, value);
+                      break;
+                  case 1:
+                      element.removeAttribute(name);
+                      break;
+                  case 2:
+                      element.setAttributeNS(XLINK_NS, name, value);
+                      break;
+                  case 3:
+                      element.removeAttributeNS(XLINK_NS, name);
+              }
+          }
+      }
+  }
+
+  function createNode(glueNode, isSVG, eventProxy, eventTargetProps) {
+      var props = glueNode[PROPS] || {};
+      if (glueNode[NAME] === TEXT_NODE) {
+          return document.createTextNode(deepGet(props, TEXT));
+      }
+      var node = (isSVG = isSVG || glueNode[NAME] === "svg")
+          ? document.createElementNS("http://www.w3.org/2000/svg", glueNode[NAME])
+          : document.createElement(glueNode[NAME]);
+      for (var name_1 in props) {
+          if ('object' != typeof props[name_1]) {
+              updateAttribute(node, name_1, props[name_1], null, isSVG, eventProxy);
+          }
+      }
+      eventTargetProps.set(node, props);
+      return node;
+  }
+
+  function fireLifeCycleEventProvider(elm, type, detail) {
+      if (detail === void 0) { detail = {}; }
+      var events = [
+          new CustomEvent('lifecycle', { detail: assign({ type: type }, detail) }),
+          new CustomEvent(type, { detail: detail })
+      ];
+      return function () { return events.map(function (event) { return elm.dispatchEvent(event); }); };
+  }
+
+  function updateNode(glueNode, isSVG, eventProxy, eventTargetProps) {
+      var node = glueNode[ELEMENT];
+      var props = glueNode[PROPS];
+      var prevProps = deepGet(glueNode, PREV_PROPS) || {};
+      var updated = false;
+      if (glueNode[NAME] === TEXT_NODE) {
+          var value = deepGet(props, TEXT);
+          var oldValue = deepGet(prevProps, TEXT);
+          updated = value != oldValue;
+          if (updated) {
+              node.nodeValue = deepGet(props, TEXT);
+          }
+          return [node, updated];
+      }
+      for (var name_1 in props) {
+          if (('object' != typeof props[name_1]) && (props[name_1] !==
+              (name_1 === "value" || name_1 === "checked"
+                  ? node[name_1]
+                  : prevProps[name_1]))) {
+              updateAttribute(node, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
+              updated = true;
+          }
+      }
+      eventTargetProps.set(node, props);
+      return [node, updated];
+  }
+
+  function patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG) {
+      var _a;
+      var newGlueNode = assign({}, glueNode);
+      var node = glueNode[ELEMENT];
+      if (!isSVG && glueNode[NAME] === 'svg') {
+          isSVG = true;
+      }
+      var lifecycle = newGlueNode[LIFECYCLE];
       var lifecycleEvent;
       var detail = null;
       switch (lifecycle) {
           case CREATE:
               lifecycleEvent = true;
-              element = createElement(glueNode, isSVG, eventProxy, elementProps);
+              node = createNode(glueNode, isSVG, eventProxy, eventTargetProps);
               break;
           case UPDATE:
-              _a = updateElement(glueNode, isSVG, eventProxy, elementProps), element = _a[0], lifecycleEvent = _a[1];
+              _a = updateNode(glueNode, isSVG, eventProxy, eventTargetProps), node = _a[0], lifecycleEvent = _a[1];
               break;
           case DESTROY:
               lifecycleEvent = true;
-              if (rawLifecycle == DESTROY) {
-                  destroys.push(function () { return element.parentElement && element.parentElement.removeChild(element); });
-              }
+              destroys.push(function () {
+                  var parent = node.parentElement || node.parentNode;
+                  parent && parent.removeChild(node);
+              });
               break;
           case REMOVE:
-              lifecycleEvent = true;
-              newGlueNode[LIFECYCLE] = REMOVING;
-              detail = {
-                  done: function () {
-                      elementRemoveds.set(element, true);
-                      Promise.resolve({}).then(mutate);
-                  }
-              };
+              if (!removedNodes.has(node)) {
+                  removedNodes.set(node, false);
+                  lifecycleEvent = true;
+                  detail = {
+                      done: function () {
+                          removedNodes.set(node, true);
+                          Promise.resolve({}).then(mutate);
+                      }
+                  };
+              }
       }
-      if (lifecycleEvent && element instanceof Element) {
-          lifecycleEvents.push(fireLifeCycleEventProvider(element, lifecycle.toLowerCase(), { detail: detail }));
+      if (lifecycleEvent) {
+          lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle, detail));
       }
       var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
-          var patchedChild = recursion(childNode, isSVG, lifecycle);
+          var patchedChild = recursion(childNode, isSVG);
           return patchedChild ? acc.concat(patchedChild) : acc;
       }, []);
       if (lifecycle === DESTROY) {
           return null;
       }
-      children.map(function (v) { return v.element; }).reduceRight(function (ref, elm) {
-          element.insertBefore(elm, ref);
+      children.map(function (v) { return v[ELEMENT]; }).reduceRight(function (ref, elm) {
+          node.insertBefore(elm, ref);
           return elm;
       }, null);
       newGlueNode[CHILDREN] = children;
-      newGlueNode[ELEMENT] = element;
+      newGlueNode[ELEMENT] = node;
       return newGlueNode;
   }
 
-  function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds) {
-      return function (next, recursion) { return function (glueNode, isSVG, captureLifecycle) { return patcher(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds, next, recursion, glueNode, isSVG, captureLifecycle); }; };
+  function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes) {
+      return function (next, recursion) { return function (glueNode, isSVG) { return patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG); }; };
   }
 
   function isVNode(value) {
@@ -361,6 +430,14 @@ Released under the MIT License.
           && NAME in value;
   }
 
+  /**
+   * x
+   *
+   * @param  name {string | Component}
+   * @param  props {object}
+   * @param  ... {object}
+   * @return {VNode}
+   */
   function x(name, props) {
       var rest = [];
       for (var _i = 2; _i < arguments.length; _i++) {
@@ -428,17 +505,19 @@ Released under the MIT License.
   }
 
   function rendererProvider(mutate, getContext, setContext /*, view, glueNode */) {
-      var elementProps = new WeakMap();
-      var elementRemoveds = new WeakMap();
-      var eventProxy = eventProxyProvider(mutate, getContext, elementProps);
+      var eventTargetProps = new WeakMap();
+      var removedNodes = new WeakMap();
+      var eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps);
       return function () {
           var destroys = [];
           var lifecycleEvents = [];
           return [
               // resolver
               resolverProvider(getContext, setContext),
+              // meger
+              glueNodeMergerProvider(removedNodes),
               // pather
-              patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, elementProps, elementRemoveds),
+              patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes),
               // finallyer
               function () { return function () {
                   lifecycleEvents.reduceRight(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
@@ -446,65 +525,6 @@ Released under the MIT License.
               }; },
           ];
       };
-  }
-
-  function mergeGlueNode(vNode, glueNode) {
-      if (!glueNode) {
-          return createGlueNode(vNode);
-      }
-      if (!vNode) {
-          deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
-          glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
-              ? glueNode[LIFECYCLE]
-              : (deepGet(glueNode, PROPS + ".on" + REMOVE)
-                  ? REMOVE
-                  : DESTROY);
-          return glueNode;
-      }
-      deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
-      glueNode[PROPS] = vNode[PROPS];
-      glueNode[KEY] = vNode[KEY];
-      glueNode[NAME] = vNode[NAME];
-      glueNode[LIFECYCLE] = UPDATE;
-      var indexedPrevChildren = glueNode[CHILDREN].map(function (child, i) { return (child.i = i, child); });
-      var children = vNode[CHILDREN].map(function (child) {
-          var prevChild, _prevChild, i;
-          for (i = 0; i < indexedPrevChildren.length; i++) {
-              _prevChild = indexedPrevChildren[i];
-              if (child[NAME] == _prevChild[NAME]
-                  && child[KEY] == _prevChild[KEY]
-                  && (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
-                  prevChild = _prevChild;
-                  break;
-              }
-          }
-          if (prevChild) {
-              indexedPrevChildren.splice(i, 1);
-              return mergeGlueNode(child, prevChild);
-          }
-          else {
-              return mergeGlueNode(child);
-          }
-      });
-      indexedPrevChildren.map(function (child) {
-          child = mergeGlueNode(undefined, child);
-          if (0 === child.i) {
-              children.unshift(child);
-          }
-          else {
-              var index = child.i - 1;
-              var i = void 0;
-              for (i = 0; i < children.length; i++) {
-                  if (index === children[i].i) {
-                      children.splice(i + 1, 0, child);
-                      return;
-                  }
-              }
-              children.push(child);
-          }
-      });
-      glueNode[CHILDREN] = children;
-      return glueNode;
   }
 
   function rendering(glueNode, view, renderers) {
@@ -516,6 +536,14 @@ Released under the MIT License.
           return resolver.apply(null, args);
       };
       var resolver = renderers.map(function (v) { return v[0]; }).reduce(wrapOnion, [noop, resolverRecursion])[0];
+      var glueNodeMergerRecursion = function () {
+          var args = [];
+          for (var _i = 0; _i < arguments.length; _i++) {
+              args[_i] = arguments[_i];
+          }
+          return glueNodeMerger.apply(null, args);
+      };
+      var glueNodeMerger = renderers.map(function (v) { return v[1]; }).reduce(wrapOnion, [noop, glueNodeMergerRecursion])[0];
       var patcherRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -523,13 +551,13 @@ Released under the MIT License.
           }
           return patcher.apply(null, args);
       };
-      var patcher = renderers.map(function (v) { return v[1]; }).reduce(wrapOnion, [noop, patcherRecursion])[0];
-      var finallyer = renderers.map(function (v) { return v[2]; }).reduce(wrapOnion, [noop, noop])[0];
+      var patcher = renderers.map(function (v) { return v[2]; }).reduce(wrapOnion, [noop, patcherRecursion])[0];
+      var finallyer = renderers.map(function (v) { return v[3]; }).reduce(wrapOnion, [noop, noop])[0];
       var vNodes = resolver(x(view, {}, []));
       var container = assign({}, glueNode);
       container[CHILDREN] = vNodes;
-      var node = mergeGlueNode(container, glueNode);
-      glueNode = patcher(node, 'svg' === node.name, '');
+      var node = glueNodeMerger(UPDATE, container, glueNode);
+      glueNode = patcher(node, 'svg' === node.name);
       finallyer();
       return glueNode;
   }
@@ -537,8 +565,15 @@ Released under the MIT License.
       var next = _a[0], recursion = _a[1];
       return [stack ? stack(next, recursion) : next, recursion];
   }
-  function noop() { }
 
+  /**
+   * atto
+   *
+   * @param  view {(props: Props, children: VNode[]) => VNode}
+   * @param  containerOrGlueNode {Element | GlueNode}
+   * @param  options {object} default: `{}`
+   * @return {Function}
+   */
   function atto(view, containerOrGlueNode, options) {
       if (options === void 0) { options = {}; }
       var scheduled = false;
@@ -583,20 +618,20 @@ Released under the MIT License.
       return mutate;
   }
 
-  var memorize = new WeakMap();
-  function currentOnlyEventHandler(eventHandler) {
-      if (!memorize.has(eventHandler)) {
-          memorize.set(eventHandler, function (context, props, event) {
-              if (event.currentTarget === event.target) {
-                  return eventHandler(context, props, event);
-              }
-          });
-      }
-      return memorize.get(eventHandler);
+  /**
+   * @param  eventHandler {Function}
+   * @return {Function}
+   */
+  function currentOnly(eventHandler) {
+      return function (context, detail, props, event) {
+          if (event.currentTarget === event.target) {
+              return eventHandler(context, detail, props, event);
+          }
+      };
   }
 
   exports.atto = atto;
-  exports.currentOnlyEventHandler = currentOnlyEventHandler;
+  exports.currentOnly = currentOnly;
   exports.x = x;
 
   Object.defineProperty(exports, '__esModule', { value: true });

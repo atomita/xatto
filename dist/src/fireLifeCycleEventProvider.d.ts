@@ -1,1 +1,1 @@
-export declare function fireLifeCycleEventProvider(elm: Element, eventName: string, option?: any): () => boolean;
+export declare function fireLifeCycleEventProvider(elm: Node, type: string, detail?: any): () => boolean[];
