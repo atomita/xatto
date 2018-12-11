@@ -3,6 +3,14 @@ import { VNode } from './VNode'
 import { createVNode } from './createVNode'
 import { isVNode } from './isVNode'
 
+/**
+ * x
+ *
+ * @param  name {string | Component}
+ * @param  props {object}
+ * @param  ... {object}
+ * @return {VNode}
+ */
 export function x(
   name: string | Component | ((name, props, ...rest) => VNode),
   props: any,

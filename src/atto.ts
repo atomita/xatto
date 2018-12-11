@@ -14,6 +14,14 @@ import { rendererProvider } from './rendererProvider';
 import { rendering } from './rendering';
 import { x } from './x'
 
+/**
+ * atto
+ *
+ * @param  view {(props: Props, children: VNode[]) => VNode}
+ * @param  containerOrGlueNode {Element | GlueNode}
+ * @param  options {object} default: `{}`
+ * @return {Function}
+ */
 export function atto(
   view: (props: Props, children: VNode[]) => VNode,
   containerOrGlueNode: Element | GlueNode,
