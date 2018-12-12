@@ -56,10 +56,22 @@
       "jsx",
       "json",
       "node"
-    ]
+    ],
+    "globals": {
+      "ts-jest": {
+        "babelConfig": {
+          "presets": [
+            "power-assert"
+          ]
+        }
+      }
+    }
   },
   "devDependencies": {
+    "@babel/core": "^7.2.0",
     "@types/jest": "^23.3.9",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-preset-power-assert": "^3.0.0",
     "hasky": "^3.0.2",
     "jest": "^23.6.0",
     "lint-staged": "^7.0.0",
