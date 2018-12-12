@@ -5,7 +5,7 @@ export interface Props {
     extra: any;
 
     fill?: any;
-    slice?: string;
+    slice?: string | number;
 
     text?: string;
   }

@@ -11,7 +11,7 @@ import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
 import { x } from './x'
 
-function resolveChildren (
+function resolveChildren(
   next: Function,
   recursion: Function,
   children: VNode[],
@@ -26,7 +26,7 @@ function resolveChildren (
   )
 }
 
-export function resolver (
+export function resolver(
   getContext,
   setContext,
   next: Function,
@@ -52,7 +52,10 @@ export function resolver (
   if (!path) {
     const parentPath = deepGet(parentProps, PATH) || ''
 
-    const slice = deepGet(rawProps, SLICE) as string
+    let slice = deepGet(rawProps, SLICE)
+    if (slice != null) {
+      slice = `${slice}`
+    }
 
     path =
       parentPath && slice
