@@ -1,5 +1,5 @@
 import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
-import { ELEMENT, PREV_PROPS } from './consts/glueNodeAttributeNames'
+import { NODE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
@@ -13,7 +13,7 @@ export function updateNode (
   eventProxy: (e: Event) => void,
   eventTargetProps: WeakMap<EventTarget, Props>
 ): [Node, boolean] {
-  const node = glueNode[ELEMENT]!
+  const node = glueNode[NODE]!
   const props = glueNode[PROPS]
   const prevProps = deepGet(glueNode, PREV_PROPS) || {}
 

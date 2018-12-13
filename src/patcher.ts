@@ -1,6 +1,6 @@
 import { assign } from './assign'
 import { TEXT } from './consts/attributeNames'
-import { ELEMENT, LIFECYCLE, PREV } from './consts/glueNodeAttributeNames'
+import { LIFECYCLE, NODE, PREV } from './consts/glueNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
 import { TEXT_NODE } from './consts/tagNames'
 import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
@@ -26,7 +26,7 @@ export function patcher (
 ): GlueNode | null {
   const newGlueNode = assign({}, glueNode)
 
-  let node: Node = glueNode[ELEMENT]!
+  let node: Node = glueNode[NODE]!
 
   if (!isSVG && glueNode[NAME] === 'svg') {
     isSVG = true
@@ -87,7 +87,7 @@ export function patcher (
   }
 
   children
-    .map((v) => v[ELEMENT]!)
+    .map((v) => v[NODE]!)
     .reduceRight(
       (ref, elm) => {
         node.insertBefore(elm, ref)
@@ -97,7 +97,7 @@ export function patcher (
     )
 
   newGlueNode[CHILDREN] = children
-  newGlueNode[ELEMENT] = node
+  newGlueNode[NODE] = node
 
   return newGlueNode
 }

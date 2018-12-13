@@ -1,4 +1,4 @@
-import { ELEMENT, LIFECYCLE } from './consts/glueNodeAttributeNames'
+import { LIFECYCLE, NODE } from './consts/glueNodeAttributeNames'
 import { DESTROY, REMOVE } from './consts/lifecycleNames'
 import { PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
@@ -26,7 +26,7 @@ export function resolveLifecycle (
     rawLifecycle
 
   if (REMOVE == lifecycle) {
-    const node = glueNode[ELEMENT]!
+    const node = glueNode[NODE]!
 
     return removedNodes.get(node) ||
       (REMOVE == rawLifecycle && !deepGet(glueNode, `${PROPS}.on${REMOVE}`))

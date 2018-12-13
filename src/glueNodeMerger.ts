@@ -1,8 +1,4 @@
-import {
-  ELEMENT,
-  LIFECYCLE,
-  PREV_PROPS
-} from './consts/glueNodeAttributeNames'
+import { LIFECYCLE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { createGlueNode } from './createGlueNode'
