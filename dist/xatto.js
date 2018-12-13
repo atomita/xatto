@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.7
+xatto v1.0.0-rc.8
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -23,15 +23,10 @@ Released under the MIT License.
   var NAME = 'name';
   var PROPS = 'props';
 
-  var ELEMENT = 'element';
+  var NODE = 'node';
   var LIFECYCLE = 'lifecycle';
   var PREV = 'prev';
   var PREV_PROPS = PREV + "." + PROPS;
-
-  var CREATE = 'create';
-  var DESTROY = 'destroy';
-  var REMOVE = 'remove';
-  var UPDATE = 'update';
 
   function assign(target, source) {
       for (var key in source) {
@@ -41,6 +36,11 @@ Released under the MIT License.
       }
       return target;
   }
+
+  var CREATE = 'create';
+  var DESTROY = 'destroy';
+  var REMOVE = 'remove';
+  var UPDATE = 'update';
 
   /**
    * Set an object item to a given value using separator notation.
@@ -77,7 +77,9 @@ Released under the MIT License.
       var newGlueNode = assign({}, vNode);
       newGlueNode.i = 0;
       newGlueNode[LIFECYCLE] = CREATE;
-      newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return recursion(CREATE, child); });
+      newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) {
+          return recursion(CREATE, child);
+      });
       deepSet(newGlueNode, PREV_PROPS, {});
       return newGlueNode;
   }
@@ -99,12 +101,14 @@ Released under the MIT License.
       return node;
   }
 
-  function noop() { }
+  function noop() {
+      // noop
+  }
 
   function createGlueNodeByElement(element) {
-      var node = createGlueNode(createVNode(false, element.nodeName), noop, noop);
-      node[ELEMENT] = element;
-      return node;
+      var glueNode = createGlueNode(createVNode(false, element.nodeName), noop, noop);
+      glueNode[NODE] = element;
+      return glueNode;
   }
 
   /**
@@ -134,7 +138,9 @@ Released under the MIT License.
   function mutate(getContext, setContext, scheduleRender, context, path) {
       if (context) {
           if (context instanceof Promise) {
-              return context.then(function (newContext) { return mutate(getContext, setContext, scheduleRender, newContext, path); });
+              return context.then(function (newContext) {
+                  return mutate(getContext, setContext, scheduleRender, newContext, path);
+              });
           }
           if ('function' === typeof context) {
               return context(mutate, getContext);
@@ -171,7 +177,7 @@ Released under the MIT License.
           var props = eventTargetProps.get(node) || {};
           var path = deepGet(props, PATH) || '';
           var detail = event.detail || {};
-          var newContext = props["on" + event.type](getContext(path), detail, props, event);
+          var newContext = props['on' + event.type](getContext(path), detail, props, event);
           mutate(newContext, path);
       };
   }
@@ -182,14 +188,15 @@ Released under the MIT License.
   function resolveLifecycle(rawLifecycle, captureLifecycle, glueNode, removedNodes) {
       var shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle];
       var shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle];
-      var lifecycle = shouldBeCaptureLifecycleByCaptured
-          && (!shouldBeCaptureLifecycle || shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured)
-          && captureLifecycle
-          || rawLifecycle;
+      var lifecycle = (shouldBeCaptureLifecycleByCaptured &&
+          (!shouldBeCaptureLifecycle ||
+              shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured) &&
+          captureLifecycle) ||
+          rawLifecycle;
       if (REMOVE == lifecycle) {
-          var node = glueNode[ELEMENT];
-          return (removedNodes.get(node) ||
-              (REMOVE == rawLifecycle && !deepGet(glueNode, PROPS + ".on" + REMOVE)))
+          var node = glueNode[NODE];
+          return removedNodes.get(node) ||
+              (REMOVE == rawLifecycle && !deepGet(glueNode, PROPS + ".on" + REMOVE))
               ? DESTROY
               : REMOVE;
       }
@@ -202,9 +209,13 @@ Released under the MIT License.
       }
       if (!vNode) {
           deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
-          var lifecycle_1 = resolveLifecycle(REMOVE != captureLifecycle && DESTROY != captureLifecycle ? REMOVE : UPDATE, captureLifecycle, glueNode, removedNodes);
+          var lifecycle_1 = resolveLifecycle(REMOVE != captureLifecycle && DESTROY != captureLifecycle
+              ? REMOVE
+              : UPDATE, captureLifecycle, glueNode, removedNodes);
           glueNode[LIFECYCLE] = lifecycle_1;
-          glueNode[CHILDREN] = glueNode[CHILDREN].map(function (child) { return recursion(lifecycle_1, null, child); });
+          glueNode[CHILDREN] = glueNode[CHILDREN].map(function (child) {
+              return recursion(lifecycle_1, null, child);
+          });
           return glueNode;
       }
       deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
@@ -217,9 +228,9 @@ Released under the MIT License.
           var prevChild, _prevChild, i;
           for (i = 0; i < indexedPrevChildren.length; i++) {
               _prevChild = indexedPrevChildren[i];
-              if (child[NAME] == _prevChild[NAME]
-                  && child[KEY] == _prevChild[KEY]
-                  && (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
+              if (child[NAME] == _prevChild[NAME] &&
+                  child[KEY] == _prevChild[KEY] &&
+                  (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
                   prevChild = _prevChild;
                   break;
               }
@@ -254,13 +265,15 @@ Released under the MIT License.
   }
 
   function glueNodeMergerProvider(removedNodes) {
-      return function (next, recursion) { return function (captureLifecycle, vNode, glueNode) { return glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode); }; };
+      return function (next, recursion) { return function (captureLifecycle, vNode, glueNode) {
+          return glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode);
+      }; };
   }
 
   var XLINK_NS = "http://www.w3.org/1999/xlink";
 
   function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
-      if (name[0] === "o" && name[1] === "n") {
+      if (name[0] === 'o' && name[1] === 'n') {
           var eventName = name.slice(2);
           if (!(value instanceof Function)) {
               element.removeEventListener(eventName, eventProxy);
@@ -272,23 +285,23 @@ Released under the MIT License.
       else {
           var nullOrFalse = value == null || value === false;
           if (name in element &&
-              name !== "list" &&
-              name !== "draggable" &&
-              name !== "spellcheck" &&
-              name !== "translate" &&
+              name !== 'list' &&
+              name !== 'draggable' &&
+              name !== 'spellcheck' &&
+              name !== 'translate' &&
               !isSVG) {
               if (nullOrFalse) {
                   element.removeAttribute(name);
               }
               else {
-                  element[name] = value == null ? "" : value;
+                  element[name] = value == null ? '' : value;
               }
           }
           else {
               var ns = false;
               if (isSVG) {
                   var originName = name;
-                  name = name.replace(/^xlink:?/, "");
+                  name = name.replace(/^xlink:?/, '');
                   ns = name !== originName;
               }
               switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
@@ -313,8 +326,9 @@ Released under the MIT License.
       if (glueNode[NAME] === TEXT_NODE) {
           return document.createTextNode(deepGet(props, TEXT));
       }
-      var node = (isSVG = isSVG || glueNode[NAME] === "svg")
-          ? document.createElementNS("http://www.w3.org/2000/svg", glueNode[NAME])
+      isSVG = isSVG || glueNode[NAME] === 'svg';
+      var node = isSVG
+          ? document.createElementNS('http://www.w3.org/2000/svg', glueNode[NAME])
           : document.createElement(glueNode[NAME]);
       for (var name_1 in props) {
           if ('object' != typeof props[name_1]) {
@@ -335,7 +349,7 @@ Released under the MIT License.
   }
 
   function updateNode(glueNode, isSVG, eventProxy, eventTargetProps) {
-      var node = glueNode[ELEMENT];
+      var node = glueNode[NODE];
       var props = glueNode[PROPS];
       var prevProps = deepGet(glueNode, PREV_PROPS) || {};
       var updated = false;
@@ -349,10 +363,9 @@ Released under the MIT License.
           return [node, updated];
       }
       for (var name_1 in props) {
-          if (('object' != typeof props[name_1]) && (props[name_1] !==
-              (name_1 === "value" || name_1 === "checked"
-                  ? node[name_1]
-                  : prevProps[name_1]))) {
+          if ('object' != typeof props[name_1] &&
+              props[name_1] !==
+                  (name_1 === 'value' || name_1 === 'checked' ? node[name_1] : prevProps[name_1])) {
               updateAttribute(node, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
               updated = true;
           }
@@ -364,7 +377,7 @@ Released under the MIT License.
   function patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG) {
       var _a;
       var newGlueNode = assign({}, glueNode);
-      var node = glueNode[ELEMENT];
+      var node = glueNode[NODE];
       if (!isSVG && glueNode[NAME] === 'svg') {
           isSVG = true;
       }
@@ -408,26 +421,30 @@ Released under the MIT License.
       if (lifecycle === DESTROY) {
           return null;
       }
-      children.map(function (v) { return v[ELEMENT]; }).reduceRight(function (ref, elm) {
+      children
+          .map(function (v) { return v[NODE]; })
+          .reduceRight(function (ref, elm) {
           node.insertBefore(elm, ref);
           return elm;
       }, null);
       newGlueNode[CHILDREN] = children;
-      newGlueNode[ELEMENT] = node;
+      newGlueNode[NODE] = node;
       return newGlueNode;
   }
 
   function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes) {
-      return function (next, recursion) { return function (glueNode, isSVG) { return patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG); }; };
+      return function (next, recursion) { return function (glueNode, isSVG) {
+          return patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG);
+      }; };
   }
 
   function isVNode(value) {
-      return null != value
-          && 'object' === typeof value
-          && PROPS in value
-          && CHILDREN in value
-          && KEY in value
-          && NAME in value;
+      return (null != value &&
+          'object' === typeof value &&
+          PROPS in value &&
+          CHILDREN in value &&
+          KEY in value &&
+          NAME in value);
   }
 
   /**
@@ -450,7 +467,7 @@ Released under the MIT License.
               rest = rest.concat(node);
           }
           else if (node != null && node !== true && node !== false) {
-              children.unshift(isVNode(node) && node || createVNode(true, node));
+              children.unshift((isVNode(node) && node) || createVNode(true, node));
           }
       }
       return createVNode(false, name, props || {}, children);
@@ -466,18 +483,23 @@ Released under the MIT License.
       if (!node) {
           return [];
       }
-      if (x === node.name) { // Fragment
+      if (x === node.name) {
+          // Fragment
           return resolveChildren(next, recursion, node[CHILDREN], parentNode);
       }
       var rawProps = node[PROPS];
-      var parentProps = parentNode && parentNode[PROPS] || {};
+      var parentProps = (parentNode && parentNode[PROPS]) || {};
       var path = deepGet(rawProps, PATH);
       if (!path) {
           var parentPath = deepGet(parentProps, PATH) || '';
           var slice = deepGet(rawProps, SLICE);
-          path = (parentPath && slice)
-              ? parentPath + "." + slice
-              : (slice || parentPath);
+          if (slice != null) {
+              slice = "" + slice;
+          }
+          path =
+              parentPath && slice
+                  ? parentPath + "." + slice
+                  : (slice || parentPath);
       }
       var sliced = getContext(path);
       if (!sliced) {
@@ -486,9 +508,9 @@ Released under the MIT License.
           setContext(sliced, path);
       }
       var context = sliced;
-      var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), parentNode && deepGet(parentNode, PROPS + "." + EXTRA) || {});
+      var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA)) || {});
       var props = remodelProps(rawProps, context, extra, path);
-      var resolveds = (typeof node.name === "function"
+      var resolveds = (typeof node.name === 'function'
           ? recursion(node.name(props, node[CHILDREN]), node)
           : [node]).reduce(function (acc, resolved) {
           if (isVNode(resolved)) {
@@ -522,7 +544,7 @@ Released under the MIT License.
               function () { return function () {
                   lifecycleEvents.reduceRight(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
                   destroys.reduceRight(function (_, destroy) { return destroy(); }, 0);
-              }; },
+              }; }
           ];
       };
   }
@@ -535,7 +557,9 @@ Released under the MIT License.
           }
           return resolver.apply(null, args);
       };
-      var resolver = renderers.map(function (v) { return v[0]; }).reduce(wrapOnion, [noop, resolverRecursion])[0];
+      var resolver = renderers
+          .map(function (v) { return v[0]; })
+          .reduce(wrapOnion, [noop, resolverRecursion])[0];
       var glueNodeMergerRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -543,7 +567,9 @@ Released under the MIT License.
           }
           return glueNodeMerger.apply(null, args);
       };
-      var glueNodeMerger = renderers.map(function (v) { return v[1]; }).reduce(wrapOnion, [noop, glueNodeMergerRecursion])[0];
+      var glueNodeMerger = renderers
+          .map(function (v) { return v[1]; })
+          .reduce(wrapOnion, [noop, glueNodeMergerRecursion])[0];
       var patcherRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -551,7 +577,9 @@ Released under the MIT License.
           }
           return patcher.apply(null, args);
       };
-      var patcher = renderers.map(function (v) { return v[2]; }).reduce(wrapOnion, [noop, patcherRecursion])[0];
+      var patcher = renderers
+          .map(function (v) { return v[2]; })
+          .reduce(wrapOnion, [noop, patcherRecursion])[0];
       var finallyer = renderers.map(function (v) { return v[3]; }).reduce(wrapOnion, [noop, noop])[0];
       var vNodes = resolver(x(view, {}, []));
       var container = assign({}, glueNode);
@@ -582,11 +610,13 @@ Released under the MIT License.
           : containerOrGlueNode;
       var rootProps = remodelProps(glueNode[PROPS]);
       var rootContext = deepGet(rootProps, CONTEXT);
-      var middlewares = MIDDLEWARES in options && options[MIDDLEWARES] || [];
+      var middlewares = (MIDDLEWARES in options && options[MIDDLEWARES]) || [];
       var mutate = mutateProvider(getContext, setContext, scheduleRender);
       var rendererProviders = [rendererProvider]
           .concat(middlewares)
-          .map(function (provider) { return provider(mutate, getContext, setContext, view, glueNode); });
+          .map(function (provider) {
+          return provider(mutate, getContext, setContext, view, glueNode);
+      });
       function getContext(path, def) {
           if (def === void 0) { def = {}; }
           return (path ? deepGet(rootContext, path) : rootContext) || def;
@@ -612,7 +642,9 @@ Released under the MIT License.
       function scheduleRender() {
           if (!scheduled) {
               scheduled = true;
-              Promise.resolve().then(render).then(rendered, renderedError);
+              Promise.resolve()
+                  .then(render)
+                  .then(rendered, renderedError);
           }
       }
       return mutate;

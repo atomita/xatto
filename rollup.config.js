@@ -18,6 +18,7 @@ export default {
   },
   plugins: [typescript({
     exclude: [
+      'tests/*',
       '*.d.ts',
       '**/*.d.ts',
       '*.test.ts',
