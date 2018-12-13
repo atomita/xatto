@@ -70,4 +70,44 @@ describe('Basic use case', () => {
     setTimeout(done, doneDelay)
   })
 
+  test('Mutate by click event', (done) => {
+    const view = ({ xa: { context }, ...props }, children) => (<div onclick={onClick}>{context.count}</div>)
+
+    let eventArgs
+
+    const onClick = (context, detail, props, event) => {
+      eventArgs = { context, detail, props, event }
+      return { count: context.count + 1 }
+    }
+
+    const mutate = atto(view, document.body)
+
+    mutate({ count: 0 })
+
+    setTimeout(() => {
+      assert(document.body.innerHTML == `<div>0</div>`)
+
+      const event = new Event('click')
+      document.body.children[0].dispatchEvent(event)
+    }, 10)
+
+    setTimeout(() => {
+      assert(document.body.innerHTML == `<div>1</div>`)
+      assert('object' == typeof eventArgs.context)
+      assert(0 === eventArgs.context.count)
+      assert('object' == typeof eventArgs.detail)
+      assert('object' == typeof eventArgs.props)
+      assert(onClick === eventArgs.props.onclick)
+      assert(eventArgs.event instanceof Event)
+
+      const event = new Event('click')
+      document.body.children[0].dispatchEvent(event)
+    }, 20)
+
+    setTimeout(() => {
+      assert(document.body.innerHTML == `<div>2</div>`)
+
+      done()
+    }, 30)
+  })
 })
