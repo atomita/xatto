@@ -22,12 +22,14 @@ import { x } from './x'
  * @param  options {object} default: `{}`
  * @return {Function}
  */
-export function atto (
+export function atto(
   view: (props: Props, children: VNode[]) => VNode,
   containerOrGlueNode: Element | GlueNode,
   options: any = {}
 ) {
   let scheduled = false
+  let renderNow = false
+  let rerender = false
 
   let glueNode =
     containerOrGlueNode instanceof Element
@@ -48,11 +50,11 @@ export function atto (
       provider(mutate, getContext, setContext, view, glueNode)
     )
 
-  function getContext (path: string, def: any = {}) {
+  function getContext(path: string, def: any = {}) {
     return (path ? deepGet(rootContext, path) : rootContext) || def
   }
 
-  function setContext (newContext: any, path?: string) {
+  function setContext(newContext: any, path?: string) {
     if (path) {
       deepSet(rootContext, path, newContext)
     } else {
@@ -60,29 +62,42 @@ export function atto (
     }
   }
 
-  function render () {
-    glueNode = rendering(
-      glueNode,
-      view,
-      rendererProviders.map((provider) => provider())
-    )
+  function render() {
+    try {
+      renderNow = true
+
+      glueNode = rendering(
+        glueNode,
+        view,
+        rendererProviders.map((provider) => provider())
+      )
+    } finally {
+      renderNow = false
+    }
   }
 
-  function rendered () {
+  function rendered() {
     scheduled = false
+
+    if (rerender) {
+      rerender = false
+      scheduleRender()
+    }
   }
 
-  function renderedError (e) {
+  function renderedError(e) {
     rendered()
     throw e
   }
 
-  function scheduleRender () {
+  function scheduleRender() {
     if (!scheduled) {
       scheduled = true
       Promise.resolve()
         .then(render)
         .then(rendered, renderedError)
+    } else if (renderNow) {
+      rerender = true
     }
   }
 

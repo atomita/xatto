@@ -34,12 +34,10 @@ test('Lifecycle', async () => {
     return { clazz: "foo" }
   })
 
-  const onUpdate = currentOnly(async (context, detail, props, event) => {
+  const onUpdate = currentOnly((context, detail, props, event) => {
     targets.update = event.currentTarget
 
     htmls.update = document.body.innerHTML
-
-    await delay(10)
 
     return { display: false }
   })
