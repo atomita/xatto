@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0-rc.8
+xatto v1.0.0
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -605,6 +605,8 @@ Released under the MIT License.
   function atto(view, containerOrGlueNode, options) {
       if (options === void 0) { options = {}; }
       var scheduled = false;
+      var renderNow = false;
+      var rerender = false;
       var glueNode = containerOrGlueNode instanceof Element
           ? createGlueNodeByElement(containerOrGlueNode)
           : containerOrGlueNode;
@@ -630,10 +632,20 @@ Released under the MIT License.
           }
       }
       function render() {
-          glueNode = rendering(glueNode, view, rendererProviders.map(function (provider) { return provider(); }));
+          try {
+              renderNow = true;
+              glueNode = rendering(glueNode, view, rendererProviders.map(function (provider) { return provider(); }));
+          }
+          finally {
+              renderNow = false;
+          }
       }
       function rendered() {
           scheduled = false;
+          if (rerender) {
+              rerender = false;
+              scheduleRender();
+          }
       }
       function renderedError(e) {
           rendered();
@@ -645,6 +657,9 @@ Released under the MIT License.
               Promise.resolve()
                   .then(render)
                   .then(rendered, renderedError);
+          }
+          else if (renderNow) {
+              rerender = true;
           }
       }
       return mutate;
