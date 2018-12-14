@@ -1,9 +1,9 @@
+import { Component } from './Component'
+import { Props } from './Props'
+
 export interface VNode {
-  name: any;
-
-  attributes: any;
-
-  children: VNode[];
-
-  key: any;
+  children: VNode[]
+  key: any
+  name: string | Component | ((name, props, ...rest) => VNode)
+  props: any
 }

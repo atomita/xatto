@@ -1,6 +1,6 @@
 {
   "name": "xatto",
-  "version": "0.1.16",
+  "version": "1.0.0-rc.8",
   "description": "xatto is View Layer Library based on Function and Context using VirtualDOM. This is developed by forking from jorgebucaran/superfine.",
   "keywords": [
     "web",
@@ -26,7 +26,7 @@
     "build": "npm run bundle:clean && npm run minify",
     "bundle": "rollup --config",
     "bundle:clean": "rm -rf ./dist && npm run bundle",
-    "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=dist/xatto.min.js.map",
+    "minify": "uglifyjs dist/xatto.js -o dist/xatto.min.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=xatto.min.js.map",
     "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
   },
   "husky": {
@@ -56,10 +56,22 @@
       "jsx",
       "json",
       "node"
-    ]
+    ],
+    "globals": {
+      "ts-jest": {
+        "babelConfig": {
+          "presets": [
+            "power-assert"
+          ]
+        }
+      }
+    }
   },
   "devDependencies": {
+    "@babel/core": "^7.2.0",
     "@types/jest": "^23.3.9",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-preset-power-assert": "^3.0.0",
     "hasky": "^3.0.2",
     "jest": "^23.6.0",
     "lint-staged": "^7.0.0",
@@ -69,6 +81,7 @@
     "rollup-plugin-typescript2": "^0.12.0",
     "ts-jest": "^23.10.4",
     "tslint": "^5.9.1",
+    "tslint-config-standard": "^8.0.1",
     "typescript": "^2.9.2",
     "uglify-js": "^3.3.16"
   },

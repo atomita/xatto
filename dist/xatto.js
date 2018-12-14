@@ -1,48 +1,46 @@
+/*
+xatto v1.0.0-rc.8
+https://github.com/atomita/xatto
+Released under the MIT License.
+*/
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
   (factory((global.xatto = {})));
 }(this, (function (exports) { 'use strict';
 
-  var ATTRIBUTES = 'attributes';
+  var CONTEXT = 'xa.context';
+  var EXTRA = 'xa.extra';
+  var FILL = 'xa.fill';
+  var PATH = 'xa.path';
+  var SLICE = 'xa.slice';
+  var TEXT = 'xa.text';
+
+  var MIDDLEWARES = 'middlewares';
+
   var CHILDREN = 'children';
   var KEY = 'key';
   var NAME = 'name';
+  var PROPS = 'props';
 
-  var CONTEXT = 'xa.context';
-  var EXTRA = 'xa.extra';
-  var SLICE = 'xa.slice';
-  var TEXT = 'xa.text';
-  /*
-   * Attributes to be deprecated in v1
-   */
-  var XA_CONTEXT = 'xa-context';
-  var XA_EXTRA = 'xa-extra';
-  var XA_SLICE = 'xa-slice';
+  var NODE = 'node';
+  var LIFECYCLE = 'lifecycle';
+  var PREV = 'prev';
+  var PREV_PROPS = PREV + "." + PROPS;
 
-  /**
-   * Get an item from an object using separator notation.
-   *
-   * @typeparam {T}
-   * @param {any} target
-   * @param {string} key
-   * @param {string} separator
-   * @return {T}
-   */
-  function deepGet(target, key, separator) {
-      if (separator === void 0) { separator = '.'; }
-      while (true) {
-          if (target == null) {
-              return target;
+  function assign(target, source) {
+      for (var key in source) {
+          if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
           }
-          var idx = key.indexOf(separator);
-          if (idx < 0) {
-              return target[key];
-          }
-          target = target[key.slice(0, idx)];
-          key = key.slice(idx + 1);
       }
+      return target;
   }
+
+  var CREATE = 'create';
+  var DESTROY = 'destroy';
+  var REMOVE = 'remove';
+  var UPDATE = 'update';
 
   /**
    * Set an object item to a given value using separator notation.
@@ -75,297 +73,153 @@
       }
   }
 
-  var CREATE = 'create';
-  var DESTROY = 'destroy';
-  var REMOVE = 'remove';
-  var REMOVING = 'removing';
-  var UPDATE = 'update';
-
-  var ELEMENT = 'element';
-  var LIFECYCLE = 'lifecycle';
-  var PREV = 'prev';
-  var PREV_ATTRIBUTES = PREV + "." + ATTRIBUTES;
+  function createGlueNode(vNode, next, recursion) {
+      var newGlueNode = assign({}, vNode);
+      newGlueNode.i = 0;
+      newGlueNode[LIFECYCLE] = CREATE;
+      newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) {
+          return recursion(CREATE, child);
+      });
+      deepSet(newGlueNode, PREV_PROPS, {});
+      return newGlueNode;
+  }
 
   var TEXT_NODE = 'xa-txt';
 
-  var XLINK_NS = "http://www.w3.org/1999/xlink";
-
-  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
-      if (name === "key" || 'object' === typeof value) {
-          // noop
+  function createVNode(mayBeTextNode, name, props, children) {
+      if (props === void 0) { props = {}; }
+      if (children === void 0) { children = []; }
+      var node = {};
+      node[NAME] = name;
+      node[PROPS] = props;
+      node[CHILDREN] = children;
+      node[KEY] = props.key;
+      if (mayBeTextNode && 'function' !== typeof name) {
+          node[NAME] = TEXT_NODE;
+          deepSet(node[PROPS], TEXT, name);
       }
-      else {
-          if (name[0] === "o" && name[1] === "n") {
-              if (!element.events) {
-                  element.events = {};
-              }
-              element.events[(name = name.slice(2))] = value;
-              if (value == null) {
-                  element.removeEventListener(name, eventProxy);
-              }
-              else if (oldValue == null) {
-                  element.addEventListener(name, eventProxy);
-              }
+      return node;
+  }
+
+  function noop() {
+      // noop
+  }
+
+  function createGlueNodeByElement(element) {
+      var glueNode = createGlueNode(createVNode(false, element.nodeName), noop, noop);
+      glueNode[NODE] = element;
+      return glueNode;
+  }
+
+  /**
+   * Get an item from an object using separator notation.
+   *
+   * @typeparam {T}
+   * @param {any} target
+   * @param {string} key
+   * @param {string} separator
+   * @return {T}
+   */
+  function deepGet(target, key, separator) {
+      if (separator === void 0) { separator = '.'; }
+      while (true) {
+          if (target == null) {
+              return target;
           }
-          else {
-              var nullOrFalse = value == null || value === false;
-              if (name in element &&
-                  name !== "list" &&
-                  name !== "draggable" &&
-                  name !== "spellcheck" &&
-                  name !== "translate" &&
-                  !isSVG) {
-                  if (nullOrFalse) {
-                      element.removeAttribute(name);
-                  }
-                  else {
-                      element[name] = value == null ? "" : value;
-                  }
-              }
-              else {
-                  var ns = false;
-                  if (isSVG) {
-                      var originName = name;
-                      name = name.replace(/^xlink:?/, "");
-                      ns = name !== originName;
-                  }
-                  switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
-                      case 0:
-                          element.setAttribute(name, value);
-                          break;
-                      case 1:
-                          element.removeAttribute(name);
-                          break;
-                      case 2:
-                          element.setAttributeNS(XLINK_NS, name, value);
-                          break;
-                      case 3:
-                          element.removeAttributeNS(XLINK_NS, name);
-                  }
-              }
+          var idx = key.indexOf(separator);
+          if (idx < 0) {
+              return target[key];
           }
+          target = target[key.slice(0, idx)];
+          key = key.slice(idx + 1);
       }
   }
 
-  function createElement(node, isSVG, eventProxy) {
-      var attributes = node[ATTRIBUTES] || {};
-      if (node[NAME] === TEXT_NODE) {
-          return document.createTextNode(deepGet(attributes, TEXT));
-      }
-      var element = (isSVG = isSVG || node[NAME] === "svg")
-          ? document.createElementNS("http://www.w3.org/2000/svg", node[NAME])
-          : document.createElement(node[NAME]);
-      for (var name_1 in attributes) {
-          updateAttribute(element, name_1, attributes[name_1], null, isSVG, eventProxy);
-      }
-      element.context = deepGet(attributes, CONTEXT) || attributes[CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(attributes, EXTRA) || attributes[EXTRA] || {}; // todo mixed to be deprecated
-      return element;
-  }
-
-  function updateElement(node, isSVG, eventProxy) {
-      var element = node[ELEMENT];
-      var attributes = node[ATTRIBUTES];
-      if (node[NAME] === TEXT_NODE) {
-          element.nodeValue = deepGet(attributes, TEXT);
-          return element;
-      }
-      var prevAttributes = deepGet(node, PREV_ATTRIBUTES) || {};
-      for (var name_1 in attributes) {
-          if (attributes[name_1] !==
-              (name_1 === "value" || name_1 === "checked"
-                  ? element[name_1]
-                  : prevAttributes[name_1])) {
-              updateAttribute(element, name_1, attributes[name_1], prevAttributes[name_1], isSVG, eventProxy);
-          }
-      }
-      element.context = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
-      element.extra = deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}; // todo mixed to be deprecated
-      return element;
-  }
-
-  function patch(patchStack) {
-      return function (glueNode, isSVG, eventProxy, isDestroy) {
-          var element;
-          if (!isSVG && glueNode[NAME] === 'svg') {
-              isSVG = true;
-          }
-          if (!isDestroy && glueNode[LIFECYCLE] === DESTROY) {
-              isDestroy = true;
-          }
-          var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
-              var patchedChild = patchStack(childNode, isSVG, eventProxy, isDestroy);
-              return patchedChild ? acc.concat(patchedChild) : acc;
-          }, []);
-          var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
-          switch (lifecycle) {
-              case CREATE:
-                  element = createElement(glueNode, isSVG, eventProxy);
-                  break;
-              case UPDATE:
-                  element = updateElement(glueNode, isSVG, eventProxy);
-                  break;
-              case DESTROY:
-                  if (glueNode[LIFECYCLE] === DESTROY) {
-                      element = glueNode[ELEMENT];
-                      element.parentElement.removeChild(element);
-                  }
-                  return null;
-              case REMOVE:
-                  glueNode[LIFECYCLE] = REMOVING;
-              default:
-                  element = glueNode[ELEMENT];
-          }
-          children.map(function (v) { return v.element; }).reduceRight(function (ref, elm) {
-              element.insertBefore(elm, ref);
-              return elm;
-          }, null);
-          glueNode[CHILDREN] = children;
-          glueNode[ELEMENT] = element;
-          return glueNode;
-      };
-  }
-
-  var lifeCycleEventPath = function (name) { return ATTRIBUTES + ".on" + name; };
-
-  function pickLifecycleEvents(lifecycleEvents, mutate) {
-      return function (stack) { return function (glueNode, isSVG, eventProxy, isDestroy) {
-          if (isDestroy === void 0) { isDestroy = false; }
-          var lifecycle = isDestroy ? DESTROY : glueNode[LIFECYCLE];
-          var lifecycleEvent;
-          switch (lifecycle) {
-              case CREATE:
-                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(CREATE));
-                  break;
-              case UPDATE:
-                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(UPDATE));
-                  break;
-              case REMOVE:
-                  var onremove_1 = deepGet(glueNode, lifeCycleEventPath(REMOVE));
-                  var done_1 = function () {
-                      glueNode[LIFECYCLE] = DESTROY;
-                      Promise.resolve().then(mutate);
-                  };
-                  lifecycleEvent = function (element, attrs, prevAttrs) {
-                      onremove_1(element, done_1, attrs, prevAttrs);
-                  };
-                  break;
-              case DESTROY:
-                  lifecycleEvent = deepGet(glueNode, lifeCycleEventPath(DESTROY));
-                  break;
-          }
-          if (lifecycleEvent) {
-              lifecycleEvents.push(function () {
-                  lifecycleEvent(glueNode[ELEMENT], glueNode[ATTRIBUTES], deepGet(glueNode, PREV_ATTRIBUTES));
+  function mutate(getContext, setContext, scheduleRender, context, path) {
+      if (context) {
+          if (context instanceof Promise) {
+              return context.then(function (newContext) {
+                  return mutate(getContext, setContext, scheduleRender, newContext, path);
               });
           }
-          return stack(glueNode, isSVG, eventProxy, isDestroy);
-      }; };
+          if ('function' === typeof context) {
+              return context(mutate, getContext);
+          }
+          if ('object' === typeof context) {
+              var targetContext = getContext(path);
+              if (context === targetContext) {
+                  return;
+              }
+              var newContext = assign(assign({}, targetContext), context);
+              setContext(newContext, path);
+              scheduleRender();
+          }
+      }
   }
 
-  /*! *****************************************************************************
-  Copyright (c) Microsoft Corporation. All rights reserved.
-  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-  this file except in compliance with the License. You may obtain a copy of the
-  License at http://www.apache.org/licenses/LICENSE-2.0
-
-  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
-  MERCHANTABLITY OR NON-INFRINGEMENT.
-
-  See the Apache Version 2.0 License for specific language governing permissions
-  and limitations under the License.
-  ***************************************************************************** */
-
-  var __assign = function() {
-      __assign = Object.assign || function __assign(t) {
-          for (var s, i = 1, n = arguments.length; i < n; i++) {
-              s = arguments[i];
-              for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-          }
-          return t;
+  function mutateProvider(getContext, setContext, scheduleRender) {
+      return function (context, path) {
+          if (path === void 0) { path = ''; }
+          return mutate(getContext, setContext, scheduleRender, context, path);
       };
-      return __assign.apply(this, arguments);
-  };
-
-  function isVNode(value) {
-      return null != value
-          && 'object' === typeof value
-          && ATTRIBUTES in value
-          && CHILDREN in value
-          && KEY in value
-          && NAME in value
-          && 4 === Object.keys(value).length;
   }
 
-  function resolveNode(node, parentNode) {
-      var attributes = node && node[ATTRIBUTES];
-      if (attributes) {
-          var context = deepGet(attributes, CONTEXT)
-              || attributes[XA_CONTEXT]
-              || (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + CONTEXT)
-                  || deepGet(parentNode, ATTRIBUTES + "." + XA_CONTEXT)))
-              || {}; // todo mixed to be deprecated
-          var slice = deepGet(attributes, SLICE) || attributes[XA_SLICE]; // todo mixed to be deprecated
-          var sliced = void 0;
-          if ('object' !== typeof slice) {
-              slice = [slice];
-          }
-          var path = slice[0];
-          if (path) {
-              sliced = deepGet(context, path);
-              if (!sliced) {
-                  var defaultValue = slice[1] || {};
-                  sliced = __assign({}, defaultValue);
-                  deepSet(context, path, sliced);
-              }
-              context = sliced;
-          }
-          var extra = __assign({}, (deepGet(attributes, EXTRA) || attributes[XA_EXTRA] || {}), (parentNode && (deepGet(parentNode, ATTRIBUTES + "." + EXTRA)
-              || deepGet(parentNode, ATTRIBUTES + "." + XA_EXTRA)) || {}));
-          deepSet(attributes, CONTEXT, context);
-          deepSet(attributes, EXTRA, extra);
-          deepSet(attributes, SLICE, []);
-          attributes[XA_CONTEXT] = context; // todo to be deprecated
-          attributes[XA_EXTRA] = extra; // todo to be deprecated
-      }
-      var resolved = (node && typeof node.name === "function")
-          ? resolveNode(node.name(node[ATTRIBUTES], node[CHILDREN]), node)
-          : node;
-      if (isVNode(resolved)) {
-          resolved[CHILDREN] = resolved[CHILDREN].reduce(function (acc, child) {
-              var reslvedChild = resolveNode(child, resolved);
-              if (reslvedChild) {
-                  acc.push(reslvedChild);
-              }
-              return acc;
-          }, []);
-          return resolved;
-      }
-      return null;
+  function remodelProps(props, context, extra, path) {
+      deepSet(props, CONTEXT, context || deepGet(props, CONTEXT) || {});
+      deepSet(props, EXTRA, extra || deepGet(props, EXTRA) || {});
+      deepSet(props, PATH, path || '');
+      return props;
   }
 
-  function mergeGlueNode(vNode, glueNode) {
-      var newGlueNode;
+  function eventProxyProvider(mutate, getContext, eventTargetProps) {
+      return function (event) {
+          var node = event.currentTarget;
+          var props = eventTargetProps.get(node) || {};
+          var path = deepGet(props, PATH) || '';
+          var detail = event.detail || {};
+          var newContext = props['on' + event.type](getContext(path), detail, props, event);
+          mutate(newContext, path);
+      };
+  }
+
+  var shouldBeCaptureLifecycles = {};
+  shouldBeCaptureLifecycles[REMOVE] = 1;
+  shouldBeCaptureLifecycles[DESTROY] = 2;
+  function resolveLifecycle(rawLifecycle, captureLifecycle, glueNode, removedNodes) {
+      var shouldBeCaptureLifecycle = shouldBeCaptureLifecycles[rawLifecycle];
+      var shouldBeCaptureLifecycleByCaptured = shouldBeCaptureLifecycles[captureLifecycle];
+      var lifecycle = (shouldBeCaptureLifecycleByCaptured &&
+          (!shouldBeCaptureLifecycle ||
+              shouldBeCaptureLifecycle < shouldBeCaptureLifecycleByCaptured) &&
+          captureLifecycle) ||
+          rawLifecycle;
+      if (REMOVE == lifecycle) {
+          var node = glueNode[NODE];
+          return removedNodes.get(node) ||
+              (REMOVE == rawLifecycle && !deepGet(glueNode, PROPS + ".on" + REMOVE))
+              ? DESTROY
+              : REMOVE;
+      }
+      return lifecycle;
+  }
+
+  function glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode) {
       if (!glueNode) {
-          newGlueNode = __assign({}, vNode);
-          newGlueNode[LIFECYCLE] = CREATE;
-          newGlueNode[CHILDREN] = vNode[CHILDREN].map(function (child) { return mergeGlueNode(child, null); });
-          deepSet(newGlueNode, PREV_ATTRIBUTES, {});
-          return newGlueNode;
+          return createGlueNode(vNode, next, recursion);
       }
       if (!vNode) {
-          deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
-          glueNode[LIFECYCLE] = (glueNode[LIFECYCLE] === REMOVING || glueNode[LIFECYCLE] === DESTROY)
-              ? glueNode[LIFECYCLE]
-              : (deepGet(glueNode, lifeCycleEventPath(REMOVE))
-                  ? REMOVE
-                  : DESTROY);
+          deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
+          var lifecycle_1 = resolveLifecycle(REMOVE != captureLifecycle && DESTROY != captureLifecycle
+              ? REMOVE
+              : UPDATE, captureLifecycle, glueNode, removedNodes);
+          glueNode[LIFECYCLE] = lifecycle_1;
+          glueNode[CHILDREN] = glueNode[CHILDREN].map(function (child) {
+              return recursion(lifecycle_1, null, child);
+          });
           return glueNode;
       }
-      deepSet(glueNode, PREV_ATTRIBUTES, glueNode[ATTRIBUTES]);
-      glueNode[ATTRIBUTES] = vNode[ATTRIBUTES];
+      deepSet(glueNode, PREV_PROPS, glueNode[PROPS]);
+      glueNode[PROPS] = vNode[PROPS];
       glueNode[KEY] = vNode[KEY];
       glueNode[NAME] = vNode[NAME];
       glueNode[LIFECYCLE] = UPDATE;
@@ -374,23 +228,23 @@
           var prevChild, _prevChild, i;
           for (i = 0; i < indexedPrevChildren.length; i++) {
               _prevChild = indexedPrevChildren[i];
-              if (child[NAME] == _prevChild[NAME]
-                  && child[KEY] == _prevChild[KEY]
-                  && (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
+              if (child[NAME] == _prevChild[NAME] &&
+                  child[KEY] == _prevChild[KEY] &&
+                  (UPDATE === _prevChild[LIFECYCLE] || CREATE === _prevChild[LIFECYCLE])) {
                   prevChild = _prevChild;
                   break;
               }
           }
           if (prevChild) {
               indexedPrevChildren.splice(i, 1);
-              return mergeGlueNode(child, prevChild);
+              return recursion(UPDATE, child, prevChild);
           }
           else {
-              return mergeGlueNode(child, null);
+              return recursion(UPDATE, child);
           }
       });
-      indexedPrevChildren.reduceRight(function (_, child) {
-          child = mergeGlueNode(null, child);
+      indexedPrevChildren.map(function (child) {
+          child = recursion(UPDATE, null, child);
           if (0 === child.i) {
               children.unshift(child);
           }
@@ -405,27 +259,203 @@
               }
               children.push(child);
           }
-      }, 0);
+      });
       glueNode[CHILDREN] = children;
       return glueNode;
   }
 
-  function createVNode(mayBeTextNode, name, attributes, children) {
-      if (attributes === void 0) { attributes = {}; }
-      if (children === void 0) { children = []; }
-      var node = {};
-      node[NAME] = name;
-      node[ATTRIBUTES] = attributes;
-      node[CHILDREN] = children;
-      node[KEY] = attributes.key;
-      if (mayBeTextNode && 'function' !== typeof name) {
-          node[NAME] = TEXT_NODE;
-          deepSet(node[ATTRIBUTES], TEXT, name);
+  function glueNodeMergerProvider(removedNodes) {
+      return function (next, recursion) { return function (captureLifecycle, vNode, glueNode) {
+          return glueNodeMerger(removedNodes, next, recursion, captureLifecycle, vNode, glueNode);
+      }; };
+  }
+
+  var XLINK_NS = "http://www.w3.org/1999/xlink";
+
+  function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
+      if (name[0] === 'o' && name[1] === 'n') {
+          var eventName = name.slice(2);
+          if (!(value instanceof Function)) {
+              element.removeEventListener(eventName, eventProxy);
+          }
+          else if (!(oldValue instanceof Function)) {
+              element.addEventListener(eventName, eventProxy);
+          }
       }
+      else {
+          var nullOrFalse = value == null || value === false;
+          if (name in element &&
+              name !== 'list' &&
+              name !== 'draggable' &&
+              name !== 'spellcheck' &&
+              name !== 'translate' &&
+              !isSVG) {
+              if (nullOrFalse) {
+                  element.removeAttribute(name);
+              }
+              else {
+                  element[name] = value == null ? '' : value;
+              }
+          }
+          else {
+              var ns = false;
+              if (isSVG) {
+                  var originName = name;
+                  name = name.replace(/^xlink:?/, '');
+                  ns = name !== originName;
+              }
+              switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
+                  case 0:
+                      element.setAttribute(name, value);
+                      break;
+                  case 1:
+                      element.removeAttribute(name);
+                      break;
+                  case 2:
+                      element.setAttributeNS(XLINK_NS, name, value);
+                      break;
+                  case 3:
+                      element.removeAttributeNS(XLINK_NS, name);
+              }
+          }
+      }
+  }
+
+  function createNode(glueNode, isSVG, eventProxy, eventTargetProps) {
+      var props = glueNode[PROPS] || {};
+      if (glueNode[NAME] === TEXT_NODE) {
+          return document.createTextNode(deepGet(props, TEXT));
+      }
+      isSVG = isSVG || glueNode[NAME] === 'svg';
+      var node = isSVG
+          ? document.createElementNS('http://www.w3.org/2000/svg', glueNode[NAME])
+          : document.createElement(glueNode[NAME]);
+      for (var name_1 in props) {
+          if ('object' != typeof props[name_1]) {
+              updateAttribute(node, name_1, props[name_1], null, isSVG, eventProxy);
+          }
+      }
+      eventTargetProps.set(node, props);
       return node;
   }
 
-  function x(name, attributes) {
+  function fireLifeCycleEventProvider(elm, type, detail) {
+      if (detail === void 0) { detail = {}; }
+      var events = [
+          new CustomEvent('lifecycle', { detail: assign({ type: type }, detail) }),
+          new CustomEvent(type, { detail: detail })
+      ];
+      return function () { return events.map(function (event) { return elm.dispatchEvent(event); }); };
+  }
+
+  function updateNode(glueNode, isSVG, eventProxy, eventTargetProps) {
+      var node = glueNode[NODE];
+      var props = glueNode[PROPS];
+      var prevProps = deepGet(glueNode, PREV_PROPS) || {};
+      var updated = false;
+      if (glueNode[NAME] === TEXT_NODE) {
+          var value = deepGet(props, TEXT);
+          var oldValue = deepGet(prevProps, TEXT);
+          updated = value != oldValue;
+          if (updated) {
+              node.nodeValue = deepGet(props, TEXT);
+          }
+          return [node, updated];
+      }
+      for (var name_1 in props) {
+          if ('object' != typeof props[name_1] &&
+              props[name_1] !==
+                  (name_1 === 'value' || name_1 === 'checked' ? node[name_1] : prevProps[name_1])) {
+              updateAttribute(node, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
+              updated = true;
+          }
+      }
+      eventTargetProps.set(node, props);
+      return [node, updated];
+  }
+
+  function patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG) {
+      var _a;
+      var newGlueNode = assign({}, glueNode);
+      var node = glueNode[NODE];
+      if (!isSVG && glueNode[NAME] === 'svg') {
+          isSVG = true;
+      }
+      var lifecycle = newGlueNode[LIFECYCLE];
+      var lifecycleEvent;
+      var detail = null;
+      switch (lifecycle) {
+          case CREATE:
+              lifecycleEvent = true;
+              node = createNode(glueNode, isSVG, eventProxy, eventTargetProps);
+              break;
+          case UPDATE:
+              _a = updateNode(glueNode, isSVG, eventProxy, eventTargetProps), node = _a[0], lifecycleEvent = _a[1];
+              break;
+          case DESTROY:
+              lifecycleEvent = true;
+              destroys.push(function () {
+                  var parent = node.parentElement || node.parentNode;
+                  parent && parent.removeChild(node);
+              });
+              break;
+          case REMOVE:
+              if (!removedNodes.has(node)) {
+                  removedNodes.set(node, false);
+                  lifecycleEvent = true;
+                  detail = {
+                      done: function () {
+                          removedNodes.set(node, true);
+                          Promise.resolve({}).then(mutate);
+                      }
+                  };
+              }
+      }
+      if (lifecycleEvent) {
+          lifecycleEvents.push(fireLifeCycleEventProvider(node, lifecycle, detail));
+      }
+      var children = glueNode[CHILDREN].reduce(function (acc, childNode) {
+          var patchedChild = recursion(childNode, isSVG);
+          return patchedChild ? acc.concat(patchedChild) : acc;
+      }, []);
+      if (lifecycle === DESTROY) {
+          return null;
+      }
+      children
+          .map(function (v) { return v[NODE]; })
+          .reduceRight(function (ref, elm) {
+          node.insertBefore(elm, ref);
+          return elm;
+      }, null);
+      newGlueNode[CHILDREN] = children;
+      newGlueNode[NODE] = node;
+      return newGlueNode;
+  }
+
+  function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes) {
+      return function (next, recursion) { return function (glueNode, isSVG) {
+          return patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG);
+      }; };
+  }
+
+  function isVNode(value) {
+      return (null != value &&
+          'object' === typeof value &&
+          PROPS in value &&
+          CHILDREN in value &&
+          KEY in value &&
+          NAME in value);
+  }
+
+  /**
+   * x
+   *
+   * @param  name {string | Component}
+   * @param  props {object}
+   * @param  ... {object}
+   * @return {VNode}
+   */
+  function x(name, props) {
       var rest = [];
       for (var _i = 2; _i < arguments.length; _i++) {
           rest[_i - 2] = arguments[_i];
@@ -437,75 +467,170 @@
               rest = rest.concat(node);
           }
           else if (node != null && node !== true && node !== false) {
-              children.unshift(isVNode(node) && node || createVNode(true, node));
+              children.unshift((isVNode(node) && node) || createVNode(true, node));
           }
       }
-      return createVNode(false, name, attributes || {}, children);
+      return createVNode(false, name, props || {}, children);
   }
 
-  function atto(view, elementOrGlueNode) {
-      var scheduled = false;
-      var glueNode = elementOrGlueNode instanceof Element
-          ? {
-              name: elementOrGlueNode.nodeName,
-              attributes: {},
-              children: [],
-              element: elementOrGlueNode
-          }
-          : elementOrGlueNode;
-      var attributes = glueNode[ATTRIBUTES];
-      var rootContext = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {}; // todo mixed to be deprecated
-      deepSet(attributes, CONTEXT, rootContext);
-      attributes[XA_CONTEXT] = rootContext; // todo to be deprecated
-      function mutate(context, actualContext, path) {
-          if (context === void 0) { context = null; }
-          if (actualContext === void 0) { actualContext = rootContext; }
-          if (path === void 0) { path = null; }
-          if (context && context !== actualContext) {
-              if ('function' === typeof context) {
-                  return context(mutate, actualContext, rootContext);
-              }
-              else if (context instanceof Promise) {
-                  return context.then(function (newContext) { return mutate(newContext, actualContext, path); });
-              }
-              else if ('object' === typeof context) {
-                  if (null == path && 'string' === typeof actualContext) {
-                      path = actualContext;
-                      actualContext = rootContext;
-                  }
-                  var targetContext_1 = path ? (deepGet(actualContext, path) || {}) : actualContext;
-                  Object.entries(context).map(function (_a) {
-                      var k = _a[0], v = _a[1];
-                      return targetContext_1[k] = v;
-                  });
-                  if (path) {
-                      deepSet(actualContext, path, targetContext_1);
-                  }
-              }
-          }
-          scheduleRender();
+  function resolveChildren(next, recursion, children, parentNode) {
+      return children.reduce(function (childs, child) {
+          childs.push.apply(childs, recursion(child, parentNode));
+          return childs;
+      }, []);
+  }
+  function resolver(getContext, setContext, next, recursion, node, parentNode) {
+      if (!node) {
+          return [];
       }
-      function eventProxy(event) {
-          var element = event.currentTarget;
-          element.context = element.context || {};
-          element.extra = element.extra || {};
-          var context = element.events[event.type](event, element.context, element.extra);
-          mutate(context, element.context);
+      if (x === node.name) {
+          // Fragment
+          return resolveChildren(next, recursion, node[CHILDREN], parentNode);
+      }
+      var rawProps = node[PROPS];
+      var parentProps = (parentNode && parentNode[PROPS]) || {};
+      var path = deepGet(rawProps, PATH);
+      if (!path) {
+          var parentPath = deepGet(parentProps, PATH) || '';
+          var slice = deepGet(rawProps, SLICE);
+          if (slice != null) {
+              slice = "" + slice;
+          }
+          path =
+              parentPath && slice
+                  ? parentPath + "." + slice
+                  : (slice || parentPath);
+      }
+      var sliced = getContext(path);
+      if (!sliced) {
+          var fill = deepGet(rawProps, FILL) || {};
+          sliced = assign({}, fill);
+          setContext(sliced, path);
+      }
+      var context = sliced;
+      var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA)) || {});
+      var props = remodelProps(rawProps, context, extra, path);
+      var resolveds = (typeof node.name === 'function'
+          ? recursion(node.name(props, node[CHILDREN]), node)
+          : [node]).reduce(function (acc, resolved) {
+          if (isVNode(resolved)) {
+              resolved[CHILDREN] = resolveChildren(next, recursion, resolved[CHILDREN], resolved);
+              acc.push(resolved);
+          }
+          return acc;
+      }, []);
+      return resolveds;
+  }
+
+  function resolverProvider(getContext, setContext) {
+      return function (next, recursion) { return function (node, parentNode) { return resolver(getContext, setContext, next, recursion, node, parentNode); }; };
+  }
+
+  function rendererProvider(mutate, getContext, setContext /*, view, glueNode */) {
+      var eventTargetProps = new WeakMap();
+      var removedNodes = new WeakMap();
+      var eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps);
+      return function () {
+          var destroys = [];
+          var lifecycleEvents = [];
+          return [
+              // resolver
+              resolverProvider(getContext, setContext),
+              // meger
+              glueNodeMergerProvider(removedNodes),
+              // pather
+              patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes),
+              // finallyer
+              function () { return function () {
+                  lifecycleEvents.reduceRight(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
+                  destroys.reduceRight(function (_, destroy) { return destroy(); }, 0);
+              }; }
+          ];
+      };
+  }
+
+  function rendering(glueNode, view, renderers) {
+      var resolverRecursion = function () {
+          var args = [];
+          for (var _i = 0; _i < arguments.length; _i++) {
+              args[_i] = arguments[_i];
+          }
+          return resolver.apply(null, args);
+      };
+      var resolver = renderers
+          .map(function (v) { return v[0]; })
+          .reduce(wrapOnion, [noop, resolverRecursion])[0];
+      var glueNodeMergerRecursion = function () {
+          var args = [];
+          for (var _i = 0; _i < arguments.length; _i++) {
+              args[_i] = arguments[_i];
+          }
+          return glueNodeMerger.apply(null, args);
+      };
+      var glueNodeMerger = renderers
+          .map(function (v) { return v[1]; })
+          .reduce(wrapOnion, [noop, glueNodeMergerRecursion])[0];
+      var patcherRecursion = function () {
+          var args = [];
+          for (var _i = 0; _i < arguments.length; _i++) {
+              args[_i] = arguments[_i];
+          }
+          return patcher.apply(null, args);
+      };
+      var patcher = renderers
+          .map(function (v) { return v[2]; })
+          .reduce(wrapOnion, [noop, patcherRecursion])[0];
+      var finallyer = renderers.map(function (v) { return v[3]; }).reduce(wrapOnion, [noop, noop])[0];
+      var vNodes = resolver(x(view, {}, []));
+      var container = assign({}, glueNode);
+      container[CHILDREN] = vNodes;
+      var node = glueNodeMerger(UPDATE, container, glueNode);
+      glueNode = patcher(node, 'svg' === node.name);
+      finallyer();
+      return glueNode;
+  }
+  function wrapOnion(_a, stack) {
+      var next = _a[0], recursion = _a[1];
+      return [stack ? stack(next, recursion) : next, recursion];
+  }
+
+  /**
+   * atto
+   *
+   * @param  view {(props: Props, children: VNode[]) => VNode}
+   * @param  containerOrGlueNode {Element | GlueNode}
+   * @param  options {object} default: `{}`
+   * @return {Function}
+   */
+  function atto(view, containerOrGlueNode, options) {
+      if (options === void 0) { options = {}; }
+      var scheduled = false;
+      var glueNode = containerOrGlueNode instanceof Element
+          ? createGlueNodeByElement(containerOrGlueNode)
+          : containerOrGlueNode;
+      var rootProps = remodelProps(glueNode[PROPS]);
+      var rootContext = deepGet(rootProps, CONTEXT);
+      var middlewares = (MIDDLEWARES in options && options[MIDDLEWARES]) || [];
+      var mutate = mutateProvider(getContext, setContext, scheduleRender);
+      var rendererProviders = [rendererProvider]
+          .concat(middlewares)
+          .map(function (provider) {
+          return provider(mutate, getContext, setContext, view, glueNode);
+      });
+      function getContext(path, def) {
+          if (def === void 0) { def = {}; }
+          return (path ? deepGet(rootContext, path) : rootContext) || def;
+      }
+      function setContext(newContext, path) {
+          if (path) {
+              deepSet(rootContext, path, newContext);
+          }
+          else {
+              rootContext = newContext;
+          }
       }
       function render() {
-          var lifecycleEvents = [];
-          var node = mergeGlueNode(resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])), glueNode);
-          var patchStack = [
-              pickLifecycleEvents(lifecycleEvents, mutate)
-          ].reduce(function (acc, stack) { return stack(acc); }, patch(function () {
-              var args = [];
-              for (var _i = 0; _i < arguments.length; _i++) {
-                  args[_i] = arguments[_i];
-              }
-              return patchStack.apply(null, args);
-          }));
-          glueNode = patchStack(node, 'svg' === node.name, eventProxy, false);
-          lifecycleEvents.reduce(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
+          glueNode = rendering(glueNode, view, rendererProviders.map(function (provider) { return provider(); }));
       }
       function rendered() {
           scheduled = false;
@@ -517,13 +642,28 @@
       function scheduleRender() {
           if (!scheduled) {
               scheduled = true;
-              Promise.resolve().then(render).then(rendered, renderedError);
+              Promise.resolve()
+                  .then(render)
+                  .then(rendered, renderedError);
           }
       }
       return mutate;
   }
 
+  /**
+   * @param  eventHandler {Function}
+   * @return {Function}
+   */
+  function currentOnly(eventHandler) {
+      return function (context, detail, props, event) {
+          if (event.currentTarget === event.target) {
+              return eventHandler(context, detail, props, event);
+          }
+      };
+  }
+
   exports.atto = atto;
+  exports.currentOnly = currentOnly;
   exports.x = x;
 
   Object.defineProperty(exports, '__esModule', { value: true });

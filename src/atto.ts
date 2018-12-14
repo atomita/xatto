@@ -1,96 +1,88 @@
-import { ATTRIBUTES, CHILDREN } from './consts/vNodeAttributeNames';
-import { CONTEXT, XA_CONTEXT } from './consts/attributeNames'
-import { ElementExtends } from './ElementExtends'
+import { assign } from './assign'
+import { CONTEXT } from './consts/attributeNames'
+import { MIDDLEWARES } from './consts/optionNames'
+import { PROPS } from './consts/vNodeAttributeNames'
+import { createGlueNodeByElement } from './createGlueNodeByElement'
 import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
-import { patch } from './patch'
-import { pickLifecycleEvents } from './pickLifecycleEvents'
-import { resolveNode } from './resolveNode'
-import { mergeGlueNode } from './mergeGlueNode'
+import { GlueNode } from './GlueNode'
+import { mutateProvider } from './mutateProvider'
+import { Props } from './Props'
+import { remodelProps } from './remodelProps'
+import { rendererProvider } from './rendererProvider'
+import { rendering } from './rendering'
+import { VNode } from './VNode'
 import { x } from './x'
 
+/**
+ * atto
+ *
+ * @param  view {(props: Props, children: VNode[]) => VNode}
+ * @param  containerOrGlueNode {Element | GlueNode}
+ * @param  options {object} default: `{}`
+ * @return {Function}
+ */
 export function atto(
-  view: (attributes: any, children: any[]) => any,
-  elementOrGlueNode: Element & ElementExtends | any
+  view: (props: Props, children: VNode[]) => VNode,
+  containerOrGlueNode: Element | GlueNode,
+  options: any = {}
 ) {
-
   let scheduled = false
+  let renderNow = false
+  let rerender = false
 
-  let glueNode = elementOrGlueNode instanceof Element
-    ? {
-      name: elementOrGlueNode.nodeName,
-      attributes: {},
-      children: [],
-      element: elementOrGlueNode
-    }
-    : elementOrGlueNode
+  let glueNode =
+    containerOrGlueNode instanceof Element
+      ? createGlueNodeByElement(containerOrGlueNode)
+      : (containerOrGlueNode as GlueNode)
 
-  const attributes = glueNode[ATTRIBUTES]
+  const rootProps = remodelProps(glueNode[PROPS])
 
-  const rootContext: any = deepGet(attributes, CONTEXT) || attributes[XA_CONTEXT] || {} // todo mixed to be deprecated
-  deepSet(attributes, CONTEXT, rootContext)
-  attributes[XA_CONTEXT] = rootContext // todo to be deprecated
+  let rootContext: any = deepGet(rootProps, CONTEXT)
 
-  function mutate(context: any = null, actualContext = rootContext, path: string | null = null) {
-    if (context && context !== actualContext) {
-      if ('function' === typeof context) {
-        return context(mutate, actualContext, rootContext)
-      } else if (context instanceof Promise) {
-        return context.then(newContext => mutate(newContext, actualContext, path))
-      } else if ('object' === typeof context) {
-        if (null == path && 'string' === typeof actualContext) {
-          path = actualContext
-          actualContext = rootContext
-        }
-        const targetContext = path ? (deepGet(actualContext, path) || {}) : actualContext
+  const middlewares = (MIDDLEWARES in options && options[MIDDLEWARES]) || []
 
-        Object.entries(context).map(([k, v]) => targetContext[k] = v)
+  const mutate = mutateProvider(getContext, setContext, scheduleRender)
 
-        if (path) {
-          deepSet(actualContext, path, targetContext)
-        }
-      }
-    }
-    scheduleRender()
+  const rendererProviders = [rendererProvider]
+    .concat(middlewares)
+    .map((provider: Function) =>
+      provider(mutate, getContext, setContext, view, glueNode)
+    )
+
+  function getContext(path: string, def: any = {}) {
+    return (path ? deepGet(rootContext, path) : rootContext) || def
   }
 
-  function eventProxy(event: Event) {
-    const element = event.currentTarget as Element & ElementExtends
-
-    element.context = element.context || {}
-    element.extra = element.extra || {}
-
-    const context = element.events[event.type](event, element.context, element.extra)
-
-    mutate(context, element.context)
+  function setContext(newContext: any, path?: string) {
+    if (path) {
+      deepSet(rootContext, path, newContext)
+    } else {
+      rootContext = newContext
+    }
   }
 
   function render() {
-    const lifecycleEvents: Function[] = []
+    try {
+      renderNow = true
 
-    const node = mergeGlueNode(
-      resolveNode(x(view, attributes, glueNode && glueNode[CHILDREN]), x('div', {}, [])),
-      glueNode
-    )
-
-    const patchStack = [
-      pickLifecycleEvents(lifecycleEvents, mutate)
-    ].reduce(
-      (acc, stack) => stack(acc),
-      patch((...args) => patchStack.apply(null, args)))
-
-    glueNode = patchStack(
-      node,
-      'svg' === node.name,
-      eventProxy,
-      false
-    )
-
-    lifecycleEvents.reduce((_, lifecycleEvent) => lifecycleEvent(), 0)
+      glueNode = rendering(
+        glueNode,
+        view,
+        rendererProviders.map((provider) => provider())
+      )
+    } finally {
+      renderNow = false
+    }
   }
 
   function rendered() {
     scheduled = false
+
+    if (rerender) {
+      rerender = false
+      scheduleRender()
+    }
   }
 
   function renderedError(e) {
@@ -101,10 +93,13 @@ export function atto(
   function scheduleRender() {
     if (!scheduled) {
       scheduled = true
-      Promise.resolve().then(render).then(rendered, renderedError)
+      Promise.resolve()
+        .then(render)
+        .then(rendered, renderedError)
+    } else if (renderNow) {
+      rerender = true
     }
   }
 
   return mutate
 }
-
