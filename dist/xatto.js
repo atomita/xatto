@@ -1,5 +1,5 @@
 /*
-xatto v1.0.0
+xatto v1.0.1
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -424,7 +424,10 @@ Released under the MIT License.
       children
           .map(function (v) { return v[NODE]; })
           .reduceRight(function (ref, elm) {
-          node.insertBefore(elm, ref);
+          if (elm.parentNode !== node
+              || elm.nextSibling !== ref) {
+              node.insertBefore(elm, ref);
+          }
           return elm;
       }, null);
       newGlueNode[CHILDREN] = children;
