@@ -90,7 +90,10 @@ export function patcher (
     .map((v) => v[NODE]!)
     .reduceRight(
       (ref, elm) => {
-        node.insertBefore(elm, ref)
+        if (elm.parentNode !== node
+          || elm.nextSibling !== ref) {
+          node.insertBefore(elm, ref)
+        }
         return elm
       },
       null as any
