@@ -1,5 +1,5 @@
 /*
-xatto v1.0.1
+xatto v1.0.2
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
