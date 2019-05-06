@@ -7,6 +7,7 @@ import { deepGet } from './deepGet'
 import { deepSet } from './deepSet'
 import { GlueNode } from './GlueNode'
 import { mutateProvider } from './mutateProvider'
+import { nowaitProvider } from './nowaitProvider'
 import { Props } from './Props'
 import { remodelProps } from './remodelProps'
 import { rendererProvider } from './rendererProvider'
@@ -22,7 +23,7 @@ import { x } from './x'
  * @param  options {object} default: `{}`
  * @return {Function}
  */
-export function atto(
+export function atto (
   view: (props: Props, children: VNode[]) => VNode,
   containerOrGlueNode: Element | GlueNode,
   options: any = {}
@@ -44,17 +45,21 @@ export function atto(
 
   const mutate = mutateProvider(getContext, setContext, scheduleRender)
 
+  const [nowait, nowaitUnsubscribe] = nowaitProvider(scheduleRender)
+
+  const extra = { mutate, nowait }
+
   const rendererProviders = [rendererProvider]
     .concat(middlewares)
     .map((provider: Function) =>
       provider(mutate, getContext, setContext, view, glueNode)
     )
 
-  function getContext(path: string, def: any = {}) {
+  function getContext (path: string, def: any = {}) {
     return (path ? deepGet(rootContext, path) : rootContext) || def
   }
 
-  function setContext(newContext: any, path?: string) {
+  function setContext (newContext: any, path?: string) {
     if (path) {
       deepSet(rootContext, path, newContext)
     } else {
@@ -62,13 +67,14 @@ export function atto(
     }
   }
 
-  function render() {
+  function render () {
     try {
       renderNow = true
 
       glueNode = rendering(
         glueNode,
         view,
+        extra,
         rendererProviders.map((provider) => provider())
       )
     } finally {
@@ -76,21 +82,23 @@ export function atto(
     }
   }
 
-  function rendered() {
+  function rendered () {
     scheduled = false
 
     if (rerender) {
       rerender = false
       scheduleRender()
+    } else {
+      nowaitUnsubscribe()
     }
   }
 
-  function renderedError(e) {
+  function renderedError (e) {
     rendered()
     throw e
   }
 
-  function scheduleRender() {
+  function scheduleRender () {
     if (!scheduled) {
       scheduled = true
       Promise.resolve()

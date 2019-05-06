@@ -5,7 +5,7 @@ import { noop } from './noop'
 import { remodelProps } from './remodelProps'
 import { x } from './x'
 
-export function rendering (glueNode, view, renderers) {
+export function rendering (glueNode, view, extra, renderers) {
   const resolverRecursion = (...args) => resolver.apply(null, args)
 
   const [resolver] = renderers
@@ -26,7 +26,7 @@ export function rendering (glueNode, view, renderers) {
 
   const [finallyer] = renderers.map((v) => v[3]).reduce(wrapOnion, [noop, noop])
 
-  const vNodes = resolver(x(view, {}, []))
+  const vNodes = resolver(x(view, { xa: { extra } }, []))
 
   const container = assign({}, glueNode)
   container[CHILDREN] = vNodes
