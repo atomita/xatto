@@ -1,1 +1,1 @@
-export declare function rendering(glueNode: any, view: any, renderers: any): any;
+export declare function rendering(glueNode: any, view: any, extra: any, renderers: any): any;

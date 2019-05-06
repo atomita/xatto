@@ -1,5 +1,5 @@
 /*
-xatto v1.0.2
+xatto v1.1.0
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -162,6 +162,101 @@ Released under the MIT License.
           if (path === void 0) { path = ''; }
           return mutate(getContext, setContext, scheduleRender, context, path);
       };
+  }
+
+  function isObservable(value) {
+      return value.subscribe && 'function' == typeof value.subscribe;
+  }
+
+  function nowaitPromise(scheduleRender, values, promise, defaultValue) {
+      if (defaultValue === void 0) { defaultValue = null; }
+      if (!values.has(promise)) {
+          values.set(promise, [defaultValue, null, exports.NowaitState.pending]);
+          promise
+              .then(function (value) {
+              values.set(promise, [value, null, exports.NowaitState.fulfilled]);
+              scheduleRender();
+          })
+              .catch(function (err) {
+              values.set(promise, [null, err, exports.NowaitState.rejected]);
+              scheduleRender();
+          });
+      }
+      return values.get(promise);
+  }
+  function nowaitObservable(scheduleRender, values, subscriptions, subscribeds, observable, defaultValue) {
+      if (defaultValue === void 0) { defaultValue = null; }
+      if (!values.has(observable)) {
+          values.set(observable, [defaultValue, null, exports.NowaitState.pending]);
+      }
+      if (!subscriptions.has(observable)) {
+          subscriptions.set(observable, observable.subscribe(function (value) {
+              subscribeds.add(observable);
+              values.set(observable, [value, null, exports.NowaitState.acquired]);
+              scheduleRender();
+          }, function (err) {
+              subscribeds.add(observable);
+              values.set(observable, [null, err, exports.NowaitState.rejected]);
+              scheduleRender();
+          }, function () {
+              var value = values.has(observable)
+                  ? values.get(observable)[0]
+                  : null;
+              subscribeds.add(observable);
+              values.set(observable, [value, null, exports.NowaitState.fulfilled]);
+              scheduleRender();
+          }));
+      }
+      if (subscribeds.has(observable)) {
+          subscribeds.delete(observable);
+      }
+      return values.get(observable);
+  }
+  (function (NowaitState) {
+      NowaitState[NowaitState["pending"] = 0] = "pending";
+      NowaitState[NowaitState["fulfilled"] = 1] = "fulfilled";
+      NowaitState[NowaitState["rejected"] = 2] = "rejected";
+      NowaitState[NowaitState["acquired"] = 3] = "acquired";
+  })(exports.NowaitState || (exports.NowaitState = {}));
+  function createNowait(scheduleRender, values, subscriptions, subscribeds) {
+      return function (mayBeAsync, defaultValue) {
+          if (defaultValue === void 0) { defaultValue = null; }
+          if (null == mayBeAsync) {
+              return [defaultValue, null, exports.NowaitState.fulfilled];
+          }
+          if (mayBeAsync instanceof Promise) {
+              return nowaitPromise(scheduleRender, values, mayBeAsync, defaultValue);
+          }
+          if (isObservable(mayBeAsync)) {
+              return nowaitObservable(scheduleRender, values, subscriptions, subscribeds, mayBeAsync, defaultValue);
+          }
+          if (mayBeAsync instanceof Error) {
+              return [null, mayBeAsync, exports.NowaitState.rejected];
+          }
+          return [mayBeAsync, null, exports.NowaitState.fulfilled];
+      };
+  }
+  function createNowaitUnsubscribe(subscriptions, subscribeds) {
+      return function () {
+          subscribeds.forEach(function (target) {
+              if (subscriptions.has(target)) {
+                  var subscription = subscriptions.get(target);
+                  subscriptions.delete(target);
+                  subscription.unsubscribe();
+              }
+          });
+          subscribeds.clear();
+      };
+  }
+
+  function nowaitProvider(scheduleRender) {
+      var values = new WeakMap();
+      var subscriptions = new Map();
+      var subscribeds = new Set();
+      return [
+          createNowait(scheduleRender, values, subscriptions, subscribeds),
+          createNowaitUnsubscribe(subscriptions, subscribeds)
+      ];
   }
 
   function remodelProps(props, context, extra, path) {
@@ -552,7 +647,7 @@ Released under the MIT License.
       };
   }
 
-  function rendering(glueNode, view, renderers) {
+  function rendering(glueNode, view, extra, renderers) {
       var resolverRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -584,7 +679,7 @@ Released under the MIT License.
           .map(function (v) { return v[2]; })
           .reduce(wrapOnion, [noop, patcherRecursion])[0];
       var finallyer = renderers.map(function (v) { return v[3]; }).reduce(wrapOnion, [noop, noop])[0];
-      var vNodes = resolver(x(view, {}, []));
+      var vNodes = resolver(x(view, { xa: { extra: extra } }, []));
       var container = assign({}, glueNode);
       container[CHILDREN] = vNodes;
       var node = glueNodeMerger(UPDATE, container, glueNode);
@@ -617,6 +712,8 @@ Released under the MIT License.
       var rootContext = deepGet(rootProps, CONTEXT);
       var middlewares = (MIDDLEWARES in options && options[MIDDLEWARES]) || [];
       var mutate = mutateProvider(getContext, setContext, scheduleRender);
+      var _a = nowaitProvider(scheduleRender), nowait = _a[0], nowaitUnsubscribe = _a[1];
+      var extra = { mutate: mutate, nowait: nowait };
       var rendererProviders = [rendererProvider]
           .concat(middlewares)
           .map(function (provider) {
@@ -637,7 +734,7 @@ Released under the MIT License.
       function render() {
           try {
               renderNow = true;
-              glueNode = rendering(glueNode, view, rendererProviders.map(function (provider) { return provider(); }));
+              glueNode = rendering(glueNode, view, extra, rendererProviders.map(function (provider) { return provider(); }));
           }
           finally {
               renderNow = false;
@@ -648,6 +745,9 @@ Released under the MIT License.
           if (rerender) {
               rerender = false;
               scheduleRender();
+          }
+          else {
+              nowaitUnsubscribe();
           }
       }
       function renderedError(e) {
