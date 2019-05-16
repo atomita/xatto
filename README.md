@@ -20,7 +20,7 @@ import { x, atto } from "xatto"
 const down = context => ({ count: context.count - 1 })
 const up = context => ({ count: context.count + 1 })
 
-const Component = ({ xa: { context }, ...attrs }, children) => (
+const Component = ({ xa: { context }, ...props }, children) => (
   <div>
     <h1>{context.count}</h1>
     <button onclick={down}>-</button>
@@ -118,14 +118,14 @@ The child component can treat a part of the context as if it were the root conte
 Also, `xa.fill` can specify the value to use if the sliced context is undefined.
 
 ```jsx
-import { x, atto } from "xatto"
+import { x, atto, Context } from "xatto"
 
 const Parent = (props, children) => (
   <div>
     <span>{props.xa.context.name}</span>
     <ul>
-      <li><Child xa={{ slice: "children.0" }}</li>
-      <li><Child xa={{ slice: "children.1", fill: { name: "baz" } }}</li>
+      <li><Context slice="children.0"><Child /></Context></li>
+      <li><Context slice="children.1" fill={{ name: "baz" }}><Child /></Context></li>
     </ul>
   </div>
 )
@@ -155,7 +155,7 @@ Event handler arguments:
 
 1. context
 2. detail
-  - [CustomEvent.detail](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/detail)
+    - [CustomEvent.detail](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/detail)
 3. props
 4. [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
 
@@ -209,12 +209,12 @@ xatto is MIT licensed. See [LICENSE](LICENSE.md).
 ### The counters.
 
 ```jsx
-import { x, atto } from "xatto"
+import { x, atto, Context } from "xatto"
 
 const down = context => ({ count: context.count - 1 })
 const up = context => ({ count: context.count + 1 })
 
-const Counter = ({ xa: { context }, ...attrs }, children) => (
+const Counter = ({ xa: { context }, ...props }, children) => (
   <div>
     <h1>{context.count}</h1>
     <button onclick={down}>-</button>
@@ -230,12 +230,13 @@ const cut = context => ({
   counters: context.counters.slice(0, -1)
 })
 
-const Main = ({ xa: { context }, ...attrs }, children) => (
+const Main = ({ xa: { context }, ...props }, children) => (
   <div>
     <button onclick={add}>add</button>
     <button onclick={cut}>cut</button>
 
-    {context.counters.map((v, i) => (<Counter xa={{ slice: "counters." + i }} />))}
+    {context.counters
+      .map((v, i) => (<Context slice={'counters.' + i}><Counter /></Context>))}
 
     <pre>{JSON.stringify(context, null, '  ')}</pre>
   </div>
