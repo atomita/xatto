@@ -3,6 +3,7 @@ import * as assert from 'power-assert'
 import { delay, minify } from './utils'
 
 import { atto } from '../src/atto'
+import { Context } from '../src/Context'
 import { x } from '../src/x'
 
 beforeEach(() => {
@@ -19,13 +20,13 @@ test('Slice context', async () => {
   const Child: any = ({ xa: { context }, ...props }, children) => (
     <div class="child">
       <div>{context.name}</div>
-      {context.children && context.children.length && (<Children xa={{ slice: "children" }} />)}
+      {context.children && context.children.length && (<Context slice="children"><Children /></Context>)}
     </div>
   )
 
   const Children: any = ({ xa: { context }, ...props }, children) => (
     <ul>
-      {context && context.length && context.map((_, i) => (<li><Child xa={{ slice: i }} /></li>))}
+      {context && context.length && context.map((_, i) => (<li><Context slice={i}><Child /></Context></li>))}
     </ul>
   )
 
