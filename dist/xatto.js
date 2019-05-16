@@ -1,5 +1,5 @@
 /*
-xatto v1.1.0
+xatto v1.1.1
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -768,6 +768,15 @@ Released under the MIT License.
       return mutate;
   }
 
+  function Context(_a, children) {
+      var slice = _a.slice, fill = _a.fill;
+      return x(ContextInner, { xa: { slice: slice, fill: fill }, children: children });
+  }
+  function ContextInner(_a) {
+      var children = _a.children;
+      return x(x, {}, children);
+  }
+
   /**
    * @param  eventHandler {Function}
    * @return {Function}
@@ -780,8 +789,18 @@ Released under the MIT License.
       };
   }
 
+  function Extra(props, children) {
+      return x(ExtraInner, { xa: { extra: props }, children: children });
+  }
+  function ExtraInner(_a) {
+      var children = _a.children;
+      return x(x, {}, children);
+  }
+
   exports.atto = atto;
+  exports.Context = Context;
   exports.currentOnly = currentOnly;
+  exports.Extra = Extra;
   exports.x = x;
 
   Object.defineProperty(exports, '__esModule', { value: true });
