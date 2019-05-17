@@ -1,5 +1,5 @@
 /*
-xatto v1.1.2
+xatto v1.2.0
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -42,19 +42,23 @@ Released under the MIT License.
   var REMOVE = 'remove';
   var UPDATE = 'update';
 
+  var FUNCTION = 'function';
+  var OBJECT = 'object';
+  var STRING = 'string';
+
   /**
    * Set an object item to a given value using separator notation.
    *
-   * @param {any} target
-   * @param {string} key
-   * @param {any} value
-   * @param {string} separator
-   * @return {boolean}
+   * @param  target any
+   * @param  key strig
+   * @param  value any
+   * @param  separator string
+   * @return Boolean
    */
   function deepSet(target, key, value, separator) {
       if (separator === void 0) { separator = '.'; }
       while (true) {
-          if ('object' !== typeof target) {
+          if (OBJECT !== typeof target) {
               return false;
           }
           var idx = key.indexOf(separator);
@@ -94,7 +98,7 @@ Released under the MIT License.
       node[PROPS] = props;
       node[CHILDREN] = children;
       node[KEY] = props.key;
-      if (mayBeTextNode && 'function' !== typeof name) {
+      if (mayBeTextNode && FUNCTION !== typeof name) {
           node[NAME] = TEXT_NODE;
           deepSet(node[PROPS], TEXT, name);
       }
@@ -142,10 +146,10 @@ Released under the MIT License.
                   return mutate(getContext, setContext, scheduleRender, newContext, path);
               });
           }
-          if ('function' === typeof context) {
+          if (FUNCTION === typeof context) {
               return context(mutate, getContext);
           }
-          if ('object' === typeof context) {
+          if (OBJECT === typeof context) {
               var targetContext = getContext(path);
               if (context === targetContext) {
                   return;
@@ -165,7 +169,7 @@ Released under the MIT License.
   }
 
   function isObservable(value) {
-      return value.subscribe && 'function' == typeof value.subscribe;
+      return value.subscribe && FUNCTION == typeof value.subscribe;
   }
 
   function nowaitPromise(scheduleRender, values, promise, defaultValue) {
@@ -266,13 +270,40 @@ Released under the MIT License.
       return props;
   }
 
+  /*! *****************************************************************************
+  Copyright (c) Microsoft Corporation. All rights reserved.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at http://www.apache.org/licenses/LICENSE-2.0
+
+  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+  MERCHANTABLITY OR NON-INFRINGEMENT.
+
+  See the Apache Version 2.0 License for specific language governing permissions
+  and limitations under the License.
+  ***************************************************************************** */
+
+  var __assign = function() {
+      __assign = Object.assign || function __assign(t) {
+          for (var s, i = 1, n = arguments.length; i < n; i++) {
+              s = arguments[i];
+              for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+          }
+          return t;
+      };
+      return __assign.apply(this, arguments);
+  };
+
   function eventProxyProvider(mutate, getContext, eventTargetProps) {
       return function (event) {
           var node = event.currentTarget;
           var props = eventTargetProps.get(node) || {};
           var path = deepGet(props, PATH) || '';
           var detail = event.detail || {};
-          var newContext = props['on' + event.type](getContext(path), detail, props, event);
+          var extra = deepGet(props, EXTRA) || {};
+          var newContext = props['on' + event.type](getContext(path), __assign({}, extra, detail), props, event);
           mutate(newContext, path);
       };
   }
@@ -426,7 +457,7 @@ Released under the MIT License.
           ? document.createElementNS('http://www.w3.org/2000/svg', glueNode[NAME])
           : document.createElement(glueNode[NAME]);
       for (var name_1 in props) {
-          if ('object' != typeof props[name_1]) {
+          if (OBJECT != typeof props[name_1]) {
               updateAttribute(node, name_1, props[name_1], null, isSVG, eventProxy);
           }
       }
@@ -458,7 +489,7 @@ Released under the MIT License.
           return [node, updated];
       }
       for (var name_1 in props) {
-          if ('object' != typeof props[name_1] &&
+          if (OBJECT != typeof props[name_1] &&
               props[name_1] !==
                   (name_1 === 'value' || name_1 === 'checked' ? node[name_1] : prevProps[name_1])) {
               updateAttribute(node, name_1, props[name_1], prevProps[name_1], isSVG, eventProxy);
@@ -536,13 +567,19 @@ Released under the MIT License.
       }; };
   }
 
+  var nameTypes = [STRING, FUNCTION];
   function isVNode(value) {
       return (null != value &&
-          'object' === typeof value &&
+          OBJECT === typeof value &&
           PROPS in value &&
           CHILDREN in value &&
           KEY in value &&
-          NAME in value);
+          NAME in value &&
+          OBJECT === typeof value[PROPS] &&
+          OBJECT === typeof value[CHILDREN] &&
+          'length' in value[CHILDREN] &&
+          (value[KEY] == null || STRING === typeof value[KEY]) &&
+          0 <= nameTypes.indexOf(typeof value[NAME]));
   }
 
   /**
@@ -571,7 +608,7 @@ Released under the MIT License.
       return createVNode(false, name, props || {}, children);
   }
 
-  function resolveChildren(next, recursion, children, parentNode) {
+  function resolveChildren(_, recursion, children, parentNode) {
       return children.reduce(function (childs, child) {
           childs.push.apply(childs, recursion(child, parentNode));
           return childs;
@@ -599,26 +636,31 @@ Released under the MIT License.
                   ? parentPath + "." + slice
                   : (slice || parentPath);
       }
-      var sliced = getContext(path);
+      var sliced = getContext(path, false);
+      if (!sliced) {
+          sliced = {};
+          setContext(sliced, path);
+      }
       var fill = deepGet(rawProps, FILL);
       if (fill) {
-          var filled = false;
           for (var key in fill) {
               if (fill.hasOwnProperty(key) && !(key in sliced)) {
                   sliced[key] = fill[key];
-                  filled = true;
               }
-          }
-          if (filled) {
-              setContext(sliced, path);
           }
       }
       var context = sliced;
       var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA)) || {});
       var props = remodelProps(rawProps, context, extra, path);
-      var resolveds = (typeof node.name === 'function'
-          ? recursion(node.name(props, node[CHILDREN]), node)
-          : [node]).reduce(function (acc, resolved) {
+      var nodes;
+      if (typeof node.name === FUNCTION) {
+          var proceeded = node.name(props, node[CHILDREN], context, extra);
+          nodes = isVNode(proceeded) ? recursion(proceeded, node) : [];
+      }
+      else {
+          nodes = [node];
+      }
+      var resolveds = nodes.reduce(function (acc, resolved) {
           if (isVNode(resolved)) {
               resolved[CHILDREN] = resolveChildren(next, recursion, resolved[CHILDREN], resolved);
               acc.push(resolved);
@@ -665,7 +707,10 @@ Released under the MIT License.
       };
       var resolver = renderers
           .map(function (v) { return v[0]; })
-          .reduce(wrapOnion, [noop, resolverRecursion])[0];
+          .reduce(wrapOnion, [
+          (function () { return []; }),
+          resolverRecursion
+      ])[0];
       var glueNodeMergerRecursion = function () {
           var args = [];
           for (var _i = 0; _i < arguments.length; _i++) {
@@ -703,10 +748,10 @@ Released under the MIT License.
   /**
    * atto
    *
-   * @param  view {(props: Props, children: VNode[]) => VNode}
-   * @param  containerOrGlueNode {Element | GlueNode}
-   * @param  options {object} default: `{}`
-   * @return {Function}
+   * @param  view Component
+   * @param  containerOrGlueNode Element | GlueNode
+   * @param  options object default: `{}`
+   * @return (context: any, path?: string) => void
    */
   function atto(view, containerOrGlueNode, options) {
       if (options === void 0) { options = {}; }
