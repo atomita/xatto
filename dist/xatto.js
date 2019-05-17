@@ -1,5 +1,5 @@
 /*
-xatto v1.1.1
+xatto v1.1.2
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -600,10 +600,18 @@ Released under the MIT License.
                   : (slice || parentPath);
       }
       var sliced = getContext(path);
-      if (!sliced) {
-          var fill = deepGet(rawProps, FILL) || {};
-          sliced = assign({}, fill);
-          setContext(sliced, path);
+      var fill = deepGet(rawProps, FILL);
+      if (fill) {
+          var filled = false;
+          for (var key in fill) {
+              if (fill.hasOwnProperty(key) && !(key in sliced)) {
+                  sliced[key] = fill[key];
+                  filled = true;
+              }
+          }
+          if (filled) {
+              setContext(sliced, path);
+          }
       }
       var context = sliced;
       var extra = assign(assign({}, deepGet(rawProps, EXTRA) || {}), (parentNode && deepGet(parentNode, PROPS + "." + EXTRA)) || {});
