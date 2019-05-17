@@ -1,4 +1,4 @@
-import { PATH } from './consts/attributeNames'
+import { EXTRA, PATH } from './consts/attributeNames'
 import { deepGet } from './deepGet'
 import { Props } from './Props'
 
@@ -16,9 +16,11 @@ export function eventProxyProvider (
 
     const detail = (event as CustomEvent).detail || {}
 
+    const extra = deepGet(props, EXTRA) || {}
+
     const newContext = props!['on' + event.type](
       getContext(path),
-      detail,
+      { ...extra, ...detail },
       props,
       event
     )

@@ -95,7 +95,12 @@ export function resolver (
 
   let nodes
   if (typeof node.name === FUNCTION) {
-    const proceeded = (node!.name as Component)(props as Props, node[CHILDREN])
+    const proceeded = (node!.name as Component)(
+      props as Props,
+      node[CHILDREN],
+      context,
+      extra
+    )
     nodes = isVNode(proceeded) ? recursion(proceeded, node) : []
   } else {
     nodes = [node]

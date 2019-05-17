@@ -1,4 +1,4 @@
-import { assign } from './assign'
+import { Component } from './Component'
 import { CONTEXT } from './consts/attributeNames'
 import { MIDDLEWARES } from './consts/optionNames'
 import { PROPS } from './consts/vNodeAttributeNames'
@@ -8,23 +8,20 @@ import { deepSet } from './deepSet'
 import { GlueNode } from './GlueNode'
 import { mutateProvider } from './mutateProvider'
 import { nowaitProvider } from './nowaitProvider'
-import { Props } from './Props'
 import { remodelProps } from './remodelProps'
 import { rendererProvider } from './rendererProvider'
 import { rendering } from './rendering'
-import { VNode } from './VNode'
-import { x } from './x'
 
 /**
  * atto
  *
- * @param  view {(props: Props, children: VNode[]) => VNode}
- * @param  containerOrGlueNode {Element | GlueNode}
- * @param  options {object} default: `{}`
- * @return {Function}
+ * @param  view Component
+ * @param  containerOrGlueNode Element | GlueNode
+ * @param  options object default: `{}`
+ * @return (context: any, path?: string) => void
  */
 export function atto (
-  view: (props: Props, children: VNode[]) => VNode,
+  view: Component,
   containerOrGlueNode: Element | GlueNode,
   options: any = {}
 ) {

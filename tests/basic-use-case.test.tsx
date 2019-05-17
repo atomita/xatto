@@ -4,6 +4,7 @@ import { delay, minify } from './utils'
 
 import { atto } from '../src/atto'
 import { x } from '../src/x'
+import { Component } from '../src/Component';
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -24,7 +25,7 @@ describe('Basic use case', () => {
   })
 
   test('Mutate by context', async () => {
-    const view = ({ xa: { context }, ...props }, children) => (<div class={context.clazz}></div>)
+    const view = ((props, children, context) => (<div class={context.clazz}></div>)) as Component
 
     const mutate = atto(view, document.body)
 
@@ -36,7 +37,7 @@ describe('Basic use case', () => {
   })
 
   test('Multi mutate', async () => {
-    const view = ({ xa: { context }, ...props }, children) => (<div class={context.clazz}></div>)
+    const view = ((props, children, context) => (<div class={context.clazz}></div>)) as Component
 
     const mutate = atto(view, document.body)
 
@@ -67,7 +68,7 @@ describe('Basic use case', () => {
   })
 
   test('Mutate by click event', async () => {
-    const view = ({ xa: { context }, ...props }, children) => (<div onclick={onClick}>{context.count}</div>)
+    const view = ((props, children, context) => (<div onclick={onClick}>{context.count}</div>)) as Component
 
     let eventArgs
 
