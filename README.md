@@ -20,7 +20,7 @@ import { x, atto } from "xatto"
 const down = context => ({ count: context.count - 1 })
 const up = context => ({ count: context.count + 1 })
 
-const Component = ({ xa: { context }, ...props }, children) => (
+const Component = (props, children, context) => (
   <div>
     <h1>{context.count}</h1>
     <button onclick={down}>-</button>
@@ -86,13 +86,13 @@ From the second time on, it update.
 The component returns the specification in the form of a plain JavaScript object called virtual DOM, and xatto is updates the actual DOM accordingly.  
 Each time the context changes the component is invoked so you can specify the appearance of the DOM based on the new context.
 
-The context can be referenced in the first argument `xa.context`.
+The context can be referenced in the third arguments.
 
 ```jsx
 import { x, atto } from "xatto"
 
-const Component = (props, children) => (
-  <div>{props.xa.context.name}</div>
+const Component = (props, children, context) => (
+  <div>{context.name}</div>
 )
 
 atto(Component, document.getElementById("app"))({
@@ -113,16 +113,16 @@ const Component = (props, children) => (
 
 #### Sliced context and fill
 
-The child component can treat a part of the context as if it were the root context by specifying `xa.slice` in the parent component.
+The child component can treat a part of the context as if it were the root context by using `<Context slice="path">` in the parent component.
 
-Also, `xa.fill` can specify the value to use if the sliced context is undefined.
+Also, the `fill` attribute can specify a value to use if part of the sliced context is undefined.
 
 ```jsx
 import { x, atto, Context } from "xatto"
 
-const Parent = (props, children) => (
+const Parent = (props, children, context) => (
   <div>
-    <span>{props.xa.context.name}</span>
+    <span>{context.name}</span>
     <ul>
       <li><Context slice="children.0"><Child /></Context></li>
       <li><Context slice="children.1" fill={{ name: "baz" }}><Child /></Context></li>
@@ -130,8 +130,8 @@ const Parent = (props, children) => (
   </div>
 )
 
-const Child = (props, children) => (
-  <span>{props.xa.context.name}</span>
+const Child = (props, children, context) => (
+  <span>{context.name}</span>
 )
 
 atto(Parent, document.getElementById("app"))({
@@ -154,7 +154,7 @@ The return value is passed to the mutate function.
 Event handler arguments:
 
 1. context
-2. detail
+2. `{ ...extra, ...detail }`
     - [CustomEvent.detail](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/detail)
 3. props
 4. [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
@@ -214,7 +214,7 @@ import { x, atto, Context } from "xatto"
 const down = context => ({ count: context.count - 1 })
 const up = context => ({ count: context.count + 1 })
 
-const Counter = ({ xa: { context }, ...props }, children) => (
+const Counter = (props, children, context) => (
   <div>
     <h1>{context.count}</h1>
     <button onclick={down}>-</button>
@@ -230,7 +230,7 @@ const cut = context => ({
   counters: context.counters.slice(0, -1)
 })
 
-const Main = ({ xa: { context }, ...props }, children) => (
+const Main = (props, children, context) => (
   <div>
     <button onclick={add}>add</button>
     <button onclick={cut}>cut</button>
