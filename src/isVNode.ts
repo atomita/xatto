@@ -1,10 +1,8 @@
+import { FUNCTION, OBJECT, STRING } from './consts/typeNames'
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { VNode } from './VNode'
 
-const OBJECT = 'object'
-const STRING = 'string'
-
-const nameTypes = [STRING, 'function']
+const nameTypes = [STRING, FUNCTION]
 
 export function isVNode (value): value is VNode {
   return (

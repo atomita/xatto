@@ -1,11 +1,13 @@
+import { OBJECT } from './consts/typeNames'
+
 /**
  * Set an object item to a given value using separator notation.
  *
- * @param {any} target
- * @param {string} key
- * @param {any} value
- * @param {string} separator
- * @return {boolean}
+ * @param  target any
+ * @param  key strig
+ * @param  value any
+ * @param  separator string
+ * @return Boolean
  */
 export function deepSet (
   target: any,
@@ -14,7 +16,7 @@ export function deepSet (
   separator: string = '.'
 ) {
   while (true) {
-    if ('object' !== typeof target) {
+    if (OBJECT !== typeof target) {
       return false
     }
 

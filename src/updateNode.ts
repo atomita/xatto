@@ -1,6 +1,7 @@
-import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
+import { TEXT } from './consts/attributeNames'
 import { NODE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { TEXT_NODE } from './consts/tagNames'
+import { OBJECT } from './consts/typeNames'
 import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { GlueNode } from './GlueNode'
@@ -32,7 +33,7 @@ export function updateNode (
 
   for (const name in props) {
     if (
-      'object' != typeof props[name] &&
+      OBJECT != typeof props[name] &&
       props[name] !==
         (name === 'value' || name === 'checked' ? node[name] : prevProps[name])
     ) {

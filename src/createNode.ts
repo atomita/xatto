@@ -1,8 +1,8 @@
-import { CONTEXT, EXTRA, TEXT } from './consts/attributeNames'
+import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
-import { CHILDREN, NAME, PROPS } from './consts/vNodeAttributeNames'
+import { OBJECT } from './consts/typeNames'
+import { NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
-import { deepSet } from './deepSet'
 import { GlueNode } from './GlueNode'
 import { Props } from './Props'
 import { updateAttribute } from './updateAttribute'
@@ -26,7 +26,7 @@ export function createNode (
     : document.createElement(glueNode[NAME])
 
   for (const name in props) {
-    if ('object' != typeof props[name]) {
+    if (OBJECT != typeof props[name]) {
       updateAttribute(node, name, props[name], null, isSVG, eventProxy)
     }
   }

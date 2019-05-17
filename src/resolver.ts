@@ -1,6 +1,7 @@
 import { assign } from './assign'
 import { Component } from './Component'
 import { EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
+import { FUNCTION } from './consts/typeNames'
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
 import { isVNode } from './isVNode'
@@ -93,7 +94,7 @@ export function resolver (
   const props = remodelProps(rawProps, context, extra, path)
 
   let nodes
-  if (typeof node.name === 'function') {
+  if (typeof node.name === FUNCTION) {
     const proceeded = (node!.name as Component)(props as Props, node[CHILDREN])
     nodes = isVNode(proceeded) ? recursion(proceeded, node) : []
   } else {

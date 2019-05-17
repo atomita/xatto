@@ -1,5 +1,5 @@
 import { assign } from './assign'
-import { deepSet } from './deepSet'
+import { FUNCTION, OBJECT } from './consts/typeNames'
 
 export function mutate (
   getContext,
@@ -15,11 +15,11 @@ export function mutate (
       )
     }
 
-    if ('function' === typeof context) {
+    if (FUNCTION === typeof context) {
       return context(mutate, getContext)
     }
 
-    if ('object' === typeof context) {
+    if (OBJECT === typeof context) {
       const targetContext = getContext(path)
 
       if (context === targetContext) {

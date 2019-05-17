@@ -1,8 +1,8 @@
 import { TEXT } from './consts/attributeNames'
 import { TEXT_NODE } from './consts/tagNames'
+import { FUNCTION } from './consts/typeNames'
 import { CHILDREN, KEY, NAME, PROPS } from './consts/vNodeAttributeNames'
 import { deepSet } from './deepSet'
-import { isVNode } from './isVNode'
 import { VNode } from './VNode'
 
 export function createVNode (
@@ -18,7 +18,7 @@ export function createVNode (
   node[CHILDREN] = children
   node[KEY] = props.key
 
-  if (mayBeTextNode && 'function' !== typeof name) {
+  if (mayBeTextNode && FUNCTION !== typeof name) {
     node[NAME] = TEXT_NODE
     deepSet(node[PROPS], TEXT, name)
   }
