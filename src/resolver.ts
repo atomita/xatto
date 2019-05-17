@@ -11,7 +11,7 @@ import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
 import { x } from './x'
 
-function resolveChildren(
+function resolveChildren (
   next: Function,
   recursion: Function,
   children: VNode[],
@@ -26,7 +26,7 @@ function resolveChildren(
   )
 }
 
-export function resolver(
+export function resolver (
   getContext,
   setContext,
   next: Function,
@@ -63,14 +63,22 @@ export function resolver(
         : ((slice || parentPath) as string)
   }
 
-  let sliced = getContext(path)
+  const sliced = getContext(path)
 
-  if (!sliced) {
-    const fill = deepGet(rawProps, FILL) || {}
+  const fill: any = deepGet(rawProps, FILL)
 
-    sliced = assign({}, fill)
+  if (fill) {
+    let filled = false
+    for (const key in fill) {
+      if (fill.hasOwnProperty(key) && !(key in sliced)) {
+        sliced[key] = fill[key]
+        filled = true
+      }
+    }
 
-    setContext(sliced, path)
+    if (filled) {
+      setContext(sliced, path)
+    }
   }
 
   const context = sliced
