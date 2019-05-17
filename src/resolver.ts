@@ -1,9 +1,8 @@
 import { assign } from './assign'
 import { Component } from './Component'
-import { CONTEXT, EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
+import { EXTRA, FILL, PATH, SLICE } from './consts/attributeNames'
 import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
 import { deepGet } from './deepGet'
-import { deepSet } from './deepSet'
 import { isVNode } from './isVNode'
 import { Props } from './Props'
 import { remodelProps } from './remodelProps'
@@ -11,9 +10,14 @@ import { ResolvedVNode } from './ResolvedVNode'
 import { VNode } from './VNode'
 import { x } from './x'
 
+export type Resolver = (
+  node?: VNode,
+  parent?: VNode | ResolvedVNode
+) => ResolvedVNode[]
+
 function resolveChildren (
-  next: Function,
-  recursion: Function,
+  _: Resolver,
+  recursion: Resolver,
   children: VNode[],
   parentNode?: VNode | ResolvedVNode
 ) {
@@ -29,8 +33,8 @@ function resolveChildren (
 export function resolver (
   getContext,
   setContext,
-  next: Function,
-  recursion: Function,
+  next: Resolver,
+  recursion: Resolver,
   node?: VNode,
   parentNode?: VNode | ResolvedVNode
 ): ResolvedVNode[] {
@@ -88,10 +92,15 @@ export function resolver (
 
   const props = remodelProps(rawProps, context, extra, path)
 
-  const resolveds = (typeof node.name === 'function'
-    ? recursion((node!.name as Component)(props as Props, node[CHILDREN]), node)
-    : [node]
-  ).reduce(
+  let nodes
+  if (typeof node.name === 'function') {
+    const proceeded = (node!.name as Component)(props as Props, node[CHILDREN])
+    nodes = isVNode(proceeded) ? recursion(proceeded, node) : []
+  } else {
+    nodes = [node]
+  }
+
+  const resolveds = nodes.reduce(
     (acc, resolved) => {
       if (isVNode(resolved)) {
         resolved![CHILDREN] = resolveChildren(

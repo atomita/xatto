@@ -1,16 +1,19 @@
 import { assign } from './assign'
 import { UPDATE } from './consts/lifecycleNames'
-import { CHILDREN, PROPS } from './consts/vNodeAttributeNames'
+import { CHILDREN } from './consts/vNodeAttributeNames'
 import { noop } from './noop'
-import { remodelProps } from './remodelProps'
+import { Resolver } from './resolver'
 import { x } from './x'
 
 export function rendering (glueNode, view, extra, renderers) {
-  const resolverRecursion = (...args) => resolver.apply(null, args)
+  const resolverRecursion: Resolver = (...args) => resolver.apply(null, args)
 
   const [resolver] = renderers
     .map((v) => v[0])
-    .reduce(wrapOnion, [noop, resolverRecursion])
+    .reduce(wrapOnion, [
+      (() => []) as Resolver,
+      resolverRecursion
+    ]) as Resolver[]
 
   const glueNodeMergerRecursion = (...args) => glueNodeMerger.apply(null, args)
 
