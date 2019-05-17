@@ -63,21 +63,19 @@ export function resolver (
         : ((slice || parentPath) as string)
   }
 
-  const sliced = getContext(path)
+  let sliced = getContext(path, false)
+  if (!sliced) {
+    sliced = {}
+    setContext(sliced, path)
+  }
 
   const fill: any = deepGet(rawProps, FILL)
 
   if (fill) {
-    let filled = false
     for (const key in fill) {
       if (fill.hasOwnProperty(key) && !(key in sliced)) {
         sliced[key] = fill[key]
-        filled = true
       }
-    }
-
-    if (filled) {
-      setContext(sliced, path)
     }
   }
 
