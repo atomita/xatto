@@ -75,13 +75,11 @@ export function atto (
         rendererProviders.map((provider) => provider())
       )
     } finally {
-      renderNow = false
+      renderNow = scheduled = false
     }
   }
 
   function rendered () {
-    scheduled = false
-
     if (rerender) {
       rerender = false
       scheduleRender()
