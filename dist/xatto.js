@@ -1,5 +1,5 @@
 /*
-xatto v1.2.0
+xatto v1.2.1
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -790,11 +790,10 @@ Released under the MIT License.
               glueNode = rendering(glueNode, view, extra, rendererProviders.map(function (provider) { return provider(); }));
           }
           finally {
-              renderNow = false;
+              renderNow = scheduled = false;
           }
       }
       function rendered() {
-          scheduled = false;
           if (rerender) {
               rerender = false;
               scheduleRender();
