@@ -154,8 +154,9 @@ The return value is passed to the mutate function.
 Event handler arguments:
 
 1. context
-2. `{ ...extra, ...detail }`
-    - [CustomEvent.detail](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/detail)
+2. `{ ...extra, ...detail, dispatch }`
+    - `detail` is [CustomEvent.detail](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/detail)
+    - `dispatch` is function for dispatch a [CustomEvent](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent)
 3. props
 4. [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
 
