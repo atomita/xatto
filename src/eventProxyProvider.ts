@@ -18,16 +18,14 @@ export function eventProxyProvider (
 
     const extra = deepGet(props, EXTRA) || {}
 
-    const element = event.target
-
     const newContext = props!['on' + event.type](
       getContext(path),
       {
         ...extra,
         ...detail,
         dispatch: (name, dtl = {}) => {
-          element &&
-            element.dispatchEvent(
+          node &&
+            node.dispatchEvent(
               new CustomEvent(name, {
                 bubbles: true,
                 cancelable: true,
