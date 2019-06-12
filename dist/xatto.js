@@ -1,5 +1,5 @@
 /*
-xatto v1.3.0
+xatto v1.3.1
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -303,11 +303,10 @@ Released under the MIT License.
           var path = deepGet(props, PATH) || '';
           var detail = event.detail || {};
           var extra = deepGet(props, EXTRA) || {};
-          var element = event.target;
           var newContext = props['on' + event.type](getContext(path), __assign({}, extra, detail, { dispatch: function (name, dtl) {
                   if (dtl === void 0) { dtl = {}; }
-                  element &&
-                      element.dispatchEvent(new CustomEvent(name, {
+                  node &&
+                      node.dispatchEvent(new CustomEvent(name, {
                           bubbles: true,
                           cancelable: true,
                           detail: dtl
