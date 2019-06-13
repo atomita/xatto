@@ -65,21 +65,18 @@ export function atto (
   }
 
   function render () {
-    try {
-      renderNow = true
+    renderNow = true
 
-      glueNode = rendering(
-        glueNode,
-        view,
-        extra,
-        rendererProviders.map((provider) => provider())
-      )
-    } finally {
-      renderNow = scheduled = false
-    }
+    glueNode = rendering(
+      glueNode,
+      view,
+      extra,
+      rendererProviders.map((provider) => provider())
+    )
   }
 
   function rendered () {
+    renderNow = scheduled = false
     if (rerender) {
       rerender = false
       scheduleRender()
