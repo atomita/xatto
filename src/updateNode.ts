@@ -1,3 +1,4 @@
+import { assign } from './assign'
 import { TEXT } from './consts/attributeNames'
 import { NODE, PREV_PROPS } from './consts/glueNodeAttributeNames'
 import { TEXT_NODE } from './consts/tagNames'
@@ -31,7 +32,7 @@ export function updateNode (
     return [node, updated]
   }
 
-  for (const name in props) {
+  for (const name in assign(assign({}, props), prevProps)) {
     if (
       OBJECT != typeof props[name] &&
       props[name] !==
