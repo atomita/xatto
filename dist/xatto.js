@@ -1,5 +1,5 @@
 /*
-xatto v1.3.2
+xatto v1.3.3
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -496,7 +496,7 @@ Released under the MIT License.
           }
           return [node, updated];
       }
-      for (var name_1 in props) {
+      for (var name_1 in assign(assign({}, props), prevProps)) {
           if (OBJECT != typeof props[name_1] &&
               props[name_1] !==
                   (name_1 === 'value' || name_1 === 'checked' ? node[name_1] : prevProps[name_1])) {
