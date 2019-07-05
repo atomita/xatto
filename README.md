@@ -192,6 +192,56 @@ This allows you to rearrange the elements to a new position if you change the po
 The key must be unique among sibling nodes.
 
 
+#### Extra
+If you want to pass values from the parent component to all descendant components, try using `Extra`.
+You can refer to the same value regardless of `context`.
+
+```jsx
+import { x, atto, Context, Extra } from "xatto"
+
+const Parent = (props, children, context) => (
+  <div>
+    <span>{context.name}</span>
+    <Extra parentName={context.name}>
+      <ul>
+        <li><Context slice="children.0"><Child /></Context></li>
+        <li><Context slice="children.1" fill={{ name: "baz" }}><Child /></Context></li>
+      </ul>
+    </Extra>
+  </div>
+)
+
+const Child = (props, children, context, extra) => (
+  <div>
+    <p>{extra.parentName + ' - ' + context.name}</p>
+    {context.children && context.children.map((child, i) => (
+      <Context slice={'children.' + i}>
+        <Grandchild />
+      </Context>
+    ))}
+  </div>
+)
+
+const Grandchild = (props, children, context, extra) => (
+  <p>{extra.parentName + ' - ' + context.name}</p>
+)
+
+atto(Parent, document.getElementById("app"))({
+  name: "foo",
+  children: [
+    {
+      name: "bar",
+      children: [
+        {
+          name: "barbaz"
+        }
+      ]
+    }
+  ]
+})
+```
+
+
 ## Polyfill which may be needed
 
 - [Promise](https://caniuse.com/#search=promise)
