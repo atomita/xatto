@@ -184,7 +184,7 @@ This event occurs just before each life cycle event occurs.
 `detail.type` is passed the life cycle event name.
 
 
-#### Keys
+### Keys
 
 The key helps to identify the node each time xatto update the DOM.  
 This allows you to rearrange the elements to a new position if you change the position.
