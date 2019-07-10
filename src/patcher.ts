@@ -46,7 +46,7 @@ export function patcher (
       )
       break
     case DESTROY:
-      lifecycleEvent = true
+      fireLifeCycleEventProvider(node, lifecycle, detail)()
       const parent = node.parentElement || node.parentNode
       parent && parent.removeChild(node)
       break
