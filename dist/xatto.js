@@ -1,5 +1,5 @@
 /*
-xatto v1.4.0
+xatto v1.4.1
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -527,7 +527,7 @@ Released under the MIT License.
               _a = updateNode(glueNode, isSVG, eventProxy, eventTargetProps), node = _a[0], lifecycleEvent = _a[1];
               break;
           case DESTROY:
-              lifecycleEvent = true;
+              fireLifeCycleEventProvider(node, lifecycle, detail)();
               var parent_1 = node.parentElement || node.parentNode;
               parent_1 && parent_1.removeChild(node);
               break;
