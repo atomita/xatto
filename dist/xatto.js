@@ -1,5 +1,5 @@
 /*
-xatto v1.3.3
+xatto v1.4.0
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -508,7 +508,7 @@ Released under the MIT License.
       return [node, updated];
   }
 
-  function patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG) {
+  function patcher(mutate, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG) {
       var _a;
       var newGlueNode = assign({}, glueNode);
       var node = glueNode[NODE];
@@ -528,10 +528,8 @@ Released under the MIT License.
               break;
           case DESTROY:
               lifecycleEvent = true;
-              destroys.push(function () {
-                  var parent = node.parentElement || node.parentNode;
-                  parent && parent.removeChild(node);
-              });
+              var parent_1 = node.parentElement || node.parentNode;
+              parent_1 && parent_1.removeChild(node);
               break;
           case REMOVE:
               if (!removedNodes.has(node)) {
@@ -558,8 +556,7 @@ Released under the MIT License.
       children
           .map(function (v) { return v[NODE]; })
           .reduceRight(function (ref, elm) {
-          if (elm.parentNode !== node
-              || elm.nextSibling !== ref) {
+          if (elm.parentNode !== node || elm.nextSibling !== ref) {
               node.insertBefore(elm, ref);
           }
           return elm;
@@ -569,9 +566,9 @@ Released under the MIT License.
       return newGlueNode;
   }
 
-  function patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes) {
+  function patcherProvider(mutate, lifecycleEvents, eventProxy, eventTargetProps, removedNodes) {
       return function (next, recursion) { return function (glueNode, isSVG) {
-          return patcher(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG);
+          return patcher(mutate, lifecycleEvents, eventProxy, eventTargetProps, removedNodes, next, recursion, glueNode, isSVG);
       }; };
   }
 
@@ -687,7 +684,6 @@ Released under the MIT License.
       var removedNodes = new WeakMap();
       var eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps);
       return function () {
-          var destroys = [];
           var lifecycleEvents = [];
           return [
               // resolver
@@ -695,11 +691,10 @@ Released under the MIT License.
               // meger
               glueNodeMergerProvider(removedNodes),
               // pather
-              patcherProvider(mutate, destroys, lifecycleEvents, eventProxy, eventTargetProps, removedNodes),
+              patcherProvider(mutate, lifecycleEvents, eventProxy, eventTargetProps, removedNodes),
               // finallyer
               function () { return function () {
                   lifecycleEvents.reduceRight(function (_, lifecycleEvent) { return lifecycleEvent(); }, 0);
-                  destroys.reduceRight(function (_, destroy) { return destroy(); }, 0);
               }; }
           ];
       };
