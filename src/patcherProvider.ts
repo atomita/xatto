@@ -4,7 +4,6 @@ import { Props } from './Props'
 
 export function patcherProvider (
   mutate: Function,
-  destroys: Function[],
   lifecycleEvents: Function[],
   eventProxy: (e: Event) => void,
   eventTargetProps: WeakMap<EventTarget, Props>,
@@ -16,7 +15,6 @@ export function patcherProvider (
   ) =>
     patcher(
       mutate,
-      destroys,
       lifecycleEvents,
       eventProxy,
       eventTargetProps,

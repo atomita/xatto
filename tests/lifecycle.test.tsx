@@ -98,11 +98,11 @@ test('Lifecycle', async () => {
       </div>
     `
   assert(htmls.remove == htmlRemove)
-  assert(htmls.destroy == htmlRemove)
 
   const htmlDestroyed = minify`
       <div id="root">
       </div>
     `
+  assert(htmls.destroy == htmlDestroyed)
   assert(document.body.innerHTML == htmlDestroyed)
 })

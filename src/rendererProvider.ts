@@ -14,7 +14,6 @@ export function rendererProvider (
   const eventProxy = eventProxyProvider(mutate, getContext, eventTargetProps)
 
   return () => {
-    const destroys: Function[] = []
     const lifecycleEvents: Function[] = []
 
     return [
@@ -27,7 +26,6 @@ export function rendererProvider (
       // pather
       patcherProvider(
         mutate,
-        destroys,
         lifecycleEvents,
         eventProxy,
         eventTargetProps,
@@ -37,8 +35,6 @@ export function rendererProvider (
       // finallyer
       () => () => {
         lifecycleEvents.reduceRight((_, lifecycleEvent) => lifecycleEvent(), 0)
-
-        destroys.reduceRight((_, destroy) => destroy(), 0)
       }
     ] as [
       Function | undefined,
