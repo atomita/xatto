@@ -1,20 +1,15 @@
 import { assign } from './assign'
-import { TEXT } from './consts/attributeNames'
-import { LIFECYCLE, NODE, PREV } from './consts/glueNodeAttributeNames'
+import { LIFECYCLE, NODE } from './consts/glueNodeAttributeNames'
 import { CREATE, DESTROY, REMOVE, UPDATE } from './consts/lifecycleNames'
-import { TEXT_NODE } from './consts/tagNames'
 import { CHILDREN, NAME } from './consts/vNodeAttributeNames'
 import { createNode } from './createNode'
-import { deepGet } from './deepGet'
 import { fireLifeCycleEventProvider } from './fireLifeCycleEventProvider'
 import { GlueNode } from './GlueNode'
 import { Props } from './Props'
-import { resolveLifecycle } from './resolveLifecycle'
 import { updateNode } from './updateNode'
 
 export function patcher (
   mutate: Function,
-  destroys: Function[],
   lifecycleEvents: Function[],
   eventProxy: (e: Event) => void,
   eventTargetProps: WeakMap<EventTarget, Props>,
@@ -52,10 +47,8 @@ export function patcher (
       break
     case DESTROY:
       lifecycleEvent = true
-      destroys.push(() => {
-        const parent = node.parentElement || node.parentNode
-        parent && parent.removeChild(node)
-      })
+      const parent = node.parentElement || node.parentNode
+      parent && parent.removeChild(node)
       break
     case REMOVE:
       if (!removedNodes.has(node)) {
@@ -90,8 +83,7 @@ export function patcher (
     .map((v) => v[NODE]!)
     .reduceRight(
       (ref, elm) => {
-        if (elm.parentNode !== node
-          || elm.nextSibling !== ref) {
+        if (elm.parentNode !== node || elm.nextSibling !== ref) {
           node.insertBefore(elm, ref)
         }
         return elm
