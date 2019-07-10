@@ -1,6 +1,6 @@
 {
   "name": "xatto",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "reveal": true,
   "description": "xatto is View Layer Library based on Function and Context using VirtualDOM. This is developed by forking from jorgebucaran/superfine.",
   "keywords": [
