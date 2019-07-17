@@ -273,31 +273,40 @@ const Counter = (props, children, context) => (
   </div>
 )
 
+let idx = 2
+
 const add = context => ({
-  counters: context.counters.concat({count: 0})
+  counters: { ...context.counters, ...(Object.fromEntries([[idx++, {count: 0}]])) }
 })
 
-const cut = context => ({
-  counters: context.counters.slice(0, -1)
-})
+const cut = context => {
+  const entry = Object.entries(context.counters).slice(-1)[0]
+  if (entry == null) {
+    return
+  }
+  delete context.counters[entry[0]]
+  return {
+    counters: { ...context.counters }
+  }
+}
 
 const Main = (props, children, context) => (
   <div>
     <button onclick={add}>add</button>
     <button onclick={cut}>cut</button>
 
-    {context.counters
-      .map((v, i) => (<Context slice={'counters.' + i}><Counter /></Context>))}
+    {Object.entries(context.counters)
+      .map(([i, v]) => (<Context slice={'counters.' + i}><Counter /></Context>))}
 
     <pre>{JSON.stringify(context, null, '  ')}</pre>
   </div>
 )
 
 atto(Main, document.getElementById("app"))({
-  counters: [
-    { count: 0 },
-    { count: 10 }
-  ]
+  counters: {
+    0: { count: 0 },
+    1: { count: 10 }
+  }
 })
 ```
 
