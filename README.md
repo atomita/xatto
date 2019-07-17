@@ -136,11 +136,11 @@ const Child = (props, children, context) => (
 
 atto(Parent, document.getElementById("app"))({
   name: "foo",
-  children: [
-    {
+  children: {
+    0: {
       name: "bar"
     }
-  ]
+  }
 })
 ```
 
@@ -204,8 +204,8 @@ const Parent = (props, children, context) => (
     <span>{context.name}</span>
     <Extra parentName={context.name}>
       <ul>
-        <li><Context slice="children.0"><Child /></Context></li>
-        <li><Context slice="children.1" fill={{ name: "baz" }}><Child /></Context></li>
+        <li><Context slice="children.child1"><Child /></Context></li>
+        <li><Context slice="children.child2" fill={{ name: "baz" }}><Child /></Context></li>
       </ul>
     </Extra>
   </div>
@@ -214,8 +214,8 @@ const Parent = (props, children, context) => (
 const Child = (props, children, context, extra) => (
   <div>
     <p>{extra.parentName + ' - ' + context.name}</p>
-    {context.children && context.children.map((child, i) => (
-      <Context slice={'children.' + i}>
+    {context.children && Object.entries(context.children).map(([k, child]) => (
+      <Context slice={'children.' + k}>
         <Grandchild />
       </Context>
     ))}
@@ -228,16 +228,16 @@ const Grandchild = (props, children, context, extra) => (
 
 atto(Parent, document.getElementById("app"))({
   name: "foo",
-  children: [
-    {
+  children: {
+    child1: {
       name: "bar",
-      children: [
-        {
+      children: {
+        grandChild1: {
           name: "barbaz"
         }
-      ]
+      }
     }
-  ]
+  }
 })
 ```
 
