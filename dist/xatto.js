@@ -1,5 +1,5 @@
 /*
-xatto v1.4.1
+xatto v1.4.2
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -404,8 +404,6 @@ Released under the MIT License.
       }; };
   }
 
-  var XLINK_NS = "http://www.w3.org/1999/xlink";
-
   function updateAttribute(element, name, value, oldValue, isSVG, eventProxy) {
       if (name[0] === 'o' && name[1] === 'n') {
           var eventName = name.slice(2);
@@ -416,42 +414,14 @@ Released under the MIT License.
               element.addEventListener(eventName, eventProxy);
           }
       }
+      else if (!isSVG && name !== 'list' && name in element) {
+          element[name] = value == null ? '' : value;
+      }
+      else if (value == null || value === false) {
+          element.removeAttribute(name);
+      }
       else {
-          var nullOrFalse = value == null || value === false;
-          if (name in element &&
-              name !== 'list' &&
-              name !== 'draggable' &&
-              name !== 'spellcheck' &&
-              name !== 'translate' &&
-              !isSVG) {
-              if (nullOrFalse) {
-                  element.removeAttribute(name);
-              }
-              else {
-                  element[name] = value == null ? '' : value;
-              }
-          }
-          else {
-              var ns = false;
-              if (isSVG) {
-                  var originName = name;
-                  name = name.replace(/^xlink:?/, '');
-                  ns = name !== originName;
-              }
-              switch ((nullOrFalse ? 1 : 0) + ((ns ? 1 : 0) << 1)) {
-                  case 0:
-                      element.setAttribute(name, value);
-                      break;
-                  case 1:
-                      element.removeAttribute(name);
-                      break;
-                  case 2:
-                      element.setAttributeNS(XLINK_NS, name, value);
-                      break;
-                  case 3:
-                      element.removeAttributeNS(XLINK_NS, name);
-              }
-          }
+          element.setAttribute(name, value);
       }
   }
 
