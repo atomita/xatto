@@ -1,5 +1,5 @@
 /*
-xatto v1.4.2
+xatto v1.4.3
 https://github.com/atomita/xatto
 Released under the MIT License.
 */
@@ -147,7 +147,10 @@ Released under the MIT License.
               });
           }
           if (FUNCTION === typeof context) {
-              return context(mutate, getContext);
+              return context(function (_context, _path) {
+                  if (_path === void 0) { _path = ''; }
+                  return mutate(getContext, setContext, scheduleRender, _context, _path);
+              }, getContext, path);
           }
           if (OBJECT === typeof context) {
               var targetContext = getContext(path);
