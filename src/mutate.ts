@@ -16,7 +16,12 @@ export function mutate (
     }
 
     if (FUNCTION === typeof context) {
-      return context(mutate, getContext)
+      return context(
+        (_context, _path = '') =>
+          mutate(getContext, setContext, scheduleRender, _context, _path),
+        getContext,
+        path
+      )
     }
 
     if (OBJECT === typeof context) {
